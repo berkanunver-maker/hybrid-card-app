@@ -1,39 +1,134 @@
-# Welcome to your Expo app 👋
+# Hybrid Card App 🪪
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+AI destekli kartvizit dijitalleştirme ve yönetim uygulaması. React Native + Expo + Firebase ile geliştirilmiştir.
 
-## Get started
+## ✨ Özellikler
 
-1. Install dependencies
+- 📸 Kartvizit tarama ve OCR
+- 🤖 AI destekli veri çıkarma (Document AI)
+- 📁 Klasör bazlı organizasyon
+- ⭐ Favori kartlar
+- 🔍 Gelişmiş arama ve filtreleme
+- 📊 Excel export
+- 🎙️ Ses notu ekleme
+- ☁️ Firebase backend (Firestore + Storage + Auth)
+- 🔐 Email/Password, Google, Apple Sign In
 
-   ```bash
-   npm install
-   ```
+## 🚀 Kurulum
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+### 1. Bağımlılıkları yükleyin
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Firebase Konfigürasyonu
+
+`.env.example` dosyasını `.env` olarak kopyalayın:
+
+```bash
+cp .env.example .env
+```
+
+`.env` dosyasını açın ve Firebase değerlerinizi girin:
+
+```env
+EXPO_PUBLIC_FIREBASE_API_KEY=your-api-key
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
+EXPO_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abc123
+EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID=G-XXXXXXXXXX
+```
+
+**Firebase değerlerini nereden bulabilirsiniz?**
+1. [Firebase Console](https://console.firebase.google.com)'a gidin
+2. Projenizi seçin
+3. **Project Settings** → **General** → **Your apps**
+4. Web app'inizin config değerlerini kopyalayın
+
+> ⚠️ **Önemli**: `.env` dosyası `.gitignore`'da bulunur ve asla commit edilmemelidir.
+
+### 3. Uygulamayı başlatın
+
+```bash
+npx expo start
+```
+
+Platform seçenekleri:
+
+```bash
+# Android emulator
+npm run android
+
+# iOS simulator
+npm run ios
+
+# Web browser
+npm run web
+```
+
+## 📱 Platform Desteği
+
+- ✅ iOS
+- ✅ Android
+- ✅ Web
+
+## 🛠 Teknoloji Stack
+
+- **Frontend**: React Native 0.81.5, React 19.1.0
+- **Framework**: Expo 54.0
+- **Backend**: Firebase (Firestore, Storage, Auth, Analytics)
+- **AI/ML**: Google Cloud Document AI, Vision OCR
+- **State Management**: React Hooks
+- **Navigation**: React Navigation 7.x
+- **UI**: Custom components, Expo Vector Icons
+
+## 📁 Proje Yapısı
+
+```
+hybrid-card-app/
+├── screens/          # 24+ ekran
+├── components/       # 27+ bileşen
+├── services/         # API ve Firebase servisleri
+├── navigation/       # Stack & Tab navigatörler
+├── utils/            # Yardımcı fonksiyonlar
+└── assets/           # Görseller ve medya
+```
+
+## 🔥 Firebase Servisleri
+
+### Firestore Collections
+- `users` - Kullanıcı profilleri
+- `categories` - Klasörler
+- `cards` - Kartvizitler
+- `fairs` - Fuarlar
+
+### Firestore Indexes
+Firestore indexes otomatik olarak `firestore.indexes.json` dosyasından yüklenecektir.
+
+## 🔐 Güvenlik
+
+- API key'ler environment variable'larda saklanır
+- Firebase Security Rules aktiftir
+- AsyncStorage ile persist auth
+
+## 🧪 Test
+
+```bash
+npm run lint
+```
+
+## 📄 Lisans
+
+Private project
+
+## 🤝 Katkıda Bulunma
+
+Bu proje aktif geliştirme aşamasındadır.
+
+---
 
 ## Learn more
 

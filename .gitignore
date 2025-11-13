@@ -1,6 +1,6 @@
 # API Keys and Secrets
 .env
 .env.local
-services/firestoreService.js
+.env.*.local
 *.key
 config/

@@ -28,6 +28,14 @@ import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 // 🆕 Kayıt Ol (Yeni Kullanıcı) Ekranı
 import RegisterScreen from "../screens/RegisterScreen";
 
+// 📊 Diğer Ekranlar
+import StatsScreen from "../screens/StatsScreen";
+import ToolsScreen from "../screens/ToolsScreen";
+import QAPreviewScreen from "../screens/QAPreviewScreen";
+import FairSelectScreen from "../screens/FairSelectScreen";
+import SelectCategoryModal from "../screens/SelectCategoryModal";
+import SettingsScreen from "../screens/SettingsScreen";
+
 const Stack = createStackNavigator();
 
 export default function StackNavigator() {
@@ -160,6 +168,48 @@ export default function StackNavigator() {
         name="QAResult"
         component={QAResultScreen}
         options={{ title: "QA Sonuçları" }}
+      />
+
+      {/* 📊 İstatistikler */}
+      <Stack.Screen
+        name="Stats"
+        component={StatsScreen}
+        options={{ headerShown: false }}
+      />
+
+      {/* 🛠️ Araçlar */}
+      <Stack.Screen
+        name="Tools"
+        component={ToolsScreen}
+        options={{ title: "Araçlar" }}
+      />
+
+      {/* 👁️ QA Önizleme */}
+      <Stack.Screen
+        name="QAPreview"
+        component={QAPreviewScreen}
+        options={{ title: "QA Önizleme" }}
+      />
+
+      {/* 🎪 Fuar Seçimi */}
+      <Stack.Screen
+        name="FairSelect"
+        component={FairSelectScreen}
+        options={{ title: "Fuar Seçin" }}
+      />
+
+      {/* 📁 Kategori Seçimi */}
+      <Stack.Screen
+        name="SelectCategory"
+        component={SelectCategoryModal}
+        options={{ title: "Kategori Seçin" }}
+      />
+
+      {/* ⚙️ Ayarlar */}
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ title: "Ayarlar" }}
       />
     </Stack.Navigator>
   );

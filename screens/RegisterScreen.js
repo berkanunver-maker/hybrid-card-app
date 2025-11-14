@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { validateEmail, validatePassword, validateDisplayName } from "../utils/validation";
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
@@ -26,10 +27,30 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
 
   const validate = () => {
-    if (!fullName.trim()) return "Lütfen ad soyad giriniz.";
-    if (!email.trim()) return "Lütfen e-posta giriniz.";
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return "Geçersiz e-posta.";
-    if (password.length < 6) return "Şifre en az 6 karakter olmalı.";
+    // Validate display name
+    const nameValidation = validateDisplayName(fullName);
+    if (!nameValidation.valid) {
+      return nameValidation.error;
+    }
+
+    // Validate email
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.valid) {
+      return emailValidation.error;
+    }
+
+    // Validate password with security requirements
+    const passwordValidation = validatePassword(password, {
+      minLength: 8,
+      requireUppercase: true,
+      requireLowercase: true,
+      requireNumber: true,
+      requireSpecialChar: false, // Optional for better UX
+    });
+    if (!passwordValidation.valid) {
+      return passwordValidation.error;
+    }
+
     return null;
   };
 
@@ -99,7 +120,7 @@ export default function RegisterScreen() {
           <View style={styles.pwdRow}>
             <TextInput
               style={[styles.input, { flex: 1, marginBottom: 0 }]}
-              placeholder="Şifre (min 6 karakter)"
+              placeholder="Şifre (min 8 karakter, büyük/küçük harf, rakam)"
               placeholderTextColor="#666"
               value={password}
               onChangeText={setPassword}

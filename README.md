@@ -135,8 +135,13 @@ Firestore indexes otomatik olarak `firestore.indexes.json` dosyasından yüklene
 ## 🔐 Güvenlik
 
 - API key'ler environment variable'larda saklanır
-- Firebase Security Rules aktiftir
+- Firebase Security Rules aktiftir (deployment gerekli)
 - AsyncStorage ile persist auth
+- Comprehensive input validation
+- File upload size and type restrictions
+- XSS protection
+
+> ⚠️ **ÖNEMLI**: Üretim ortamına deploy etmeden önce [SECURITY.md](./SECURITY.md) dosyasını okuyun!
 
 ## 🧪 Test
 

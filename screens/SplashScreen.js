@@ -1,42 +1,38 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 export default function SplashScreen() {
   const navigation = useNavigation();
   const [status, setStatus] = useState("Yükleniyor...");
 
   useEffect(() => {
-    autoLogin();
+    checkAuthStatus();
   }, []);
 
-  const autoLogin = async () => {
+  const checkAuthStatus = () => {
     const auth = getAuth();
-    
-    try {
-      setStatus("Test kullanıcısı ile giriş yapılıyor...");
-      
-      // 🔧 Otomatik test girişi
-      await signInWithEmailAndPassword(auth, "test@test.com", "test123");
-      
-      console.log("✅ Otomatik test girişi başarılı");
-      setStatus("Giriş başarılı! Yönlendiriliyor...");
-      
-      // ✅ Başarılı giriş sonrası Main (TabNavigator) ekranına git
-      setTimeout(() => {
-        navigation.replace("Main"); // ✅ "HomeTabs" yerine "Main" kullanıyoruz
-      }, 500);
-      
-    } catch (error) {
-      console.error("❌ Otomatik giriş hatası:", error);
-      
-      // Eğer kullanıcı yoksa veya hata varsa Login'e yönlendir
-      setStatus("Giriş gerekli...");
-      setTimeout(() => {
-        navigation.replace("Login");
-      }, 1000);
-    }
+
+    // Listen for auth state changes
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is signed in
+        setStatus("Giriş mevcut! Yönlendiriliyor...");
+        setTimeout(() => {
+          navigation.replace("Main");
+        }, 500);
+      } else {
+        // No user is signed in
+        setStatus("Giriş gerekli...");
+        setTimeout(() => {
+          navigation.replace("Login");
+        }, 800);
+      }
+    });
+
+    // Cleanup subscription
+    return () => unsubscribe();
   };
 
   return (

@@ -50,7 +50,31 @@ EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID=G-XXXXXXXXXX
 
 > ⚠️ **Önemli**: `.env` dosyası `.gitignore`'da bulunur ve asla commit edilmemelidir.
 
-### 3. Uygulamayı başlatın
+### 3. Google OAuth Konfigürasyonu (Opsiyonel)
+
+Google ile giriş özelliğini aktif etmek için:
+
+**1. Google Cloud Console'da OAuth Client ID oluşturun:**
+- [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → Credentials
+- **Create Credentials** → **OAuth 2.0 Client ID**
+- Üç farklı Client ID oluşturun:
+  - **Web Application** (tüm platformlar için)
+  - **iOS** (iOS uygulaması için)
+  - **Android** (Android uygulaması için)
+
+**2. `.env` dosyasına ekleyin:**
+```env
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=your-ios-client-id.apps.googleusercontent.com
+EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=your-android-client-id.apps.googleusercontent.com
+```
+
+**3. Firebase Console'da Google Auth'u aktif edin:**
+- Authentication → Sign-in method → Google → Enable
+
+> 💡 **Not**: Google OAuth ayarlanmazsa, kullanıcılar Email/Password ve Apple ile giriş yapabilir.
+
+### 4. Uygulamayı başlatın
 
 ```bash
 npx expo start

@@ -33,7 +33,10 @@ import * as Crypto from "expo-crypto";
 // Google için Expo Session
 WebBrowser.maybeCompleteAuthSession();
 
-const WEB_CLIENT_ID = "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com";
+// Google OAuth Client IDs (Environment Variables)
+const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
 
 export default function LoginScreen() {
   const navigation = useNavigation();
@@ -79,10 +82,10 @@ export default function LoginScreen() {
 
   // -------- Google Sign-In --------
   const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: WEB_CLIENT_ID,
-    expoClientId: WEB_CLIENT_ID,
-    iosClientId: WEB_CLIENT_ID,
-    androidClientId: WEB_CLIENT_ID,
+    webClientId: GOOGLE_WEB_CLIENT_ID,
+    expoClientId: GOOGLE_WEB_CLIENT_ID,
+    iosClientId: GOOGLE_IOS_CLIENT_ID || GOOGLE_WEB_CLIENT_ID,
+    androidClientId: GOOGLE_ANDROID_CLIENT_ID || GOOGLE_WEB_CLIENT_ID,
     scopes: ["profile", "email"],
   });
 
@@ -118,8 +121,11 @@ export default function LoginScreen() {
   }, [response]);
 
   const handleGoogleLogin = async () => {
-    if (!WEB_CLIENT_ID || WEB_CLIENT_ID.includes("YOUR_WEB_CLIENT_ID")) {
-      Alert.alert("Eksik Ayar", "WEB_CLIENT_ID henüz tanımlanmadı.");
+    if (!GOOGLE_WEB_CLIENT_ID) {
+      Alert.alert(
+        "Google Login Yapılandırılmamış",
+        "Google ile giriş yapmak için .env dosyasına EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID eklenmelidir.\n\nŞimdilik Email/Password ile giriş yapabilirsiniz."
+      );
       return;
     }
 

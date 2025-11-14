@@ -19,6 +19,7 @@ import {
   GoogleAuthProvider,
   OAuthProvider,
 } from "firebase/auth";
+import { validateEmail } from "../utils/validation";
 
 import SocialButton from "../components/SocialButton";
 
@@ -49,12 +50,21 @@ export default function LoginScreen() {
 
   // -------- Email & Password Giriş --------
   const handleLogin = async () => {
-    if (!email.trim()) {
-      Alert.alert("Hata", "Lütfen email giriniz");
+    // Validate email
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.valid) {
+      Alert.alert("Hata", emailValidation.error);
       return;
     }
+
+    // Validate password is not empty
     if (!password.trim()) {
       Alert.alert("Hata", "Lütfen şifre giriniz");
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert("Hata", "Şifre en az 6 karakter olmalıdır");
       return;
     }
 
@@ -62,7 +72,7 @@ export default function LoginScreen() {
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
       console.log("✅ Giriş başarılı (email)");
-      navigation.replace("HomeTabs");
+      navigation.replace("Main");
     } catch (error) {
       console.error("❌ Giriş hatası:", error);
       if (error?.code === "auth/user-not-found") {
@@ -108,7 +118,7 @@ export default function LoginScreen() {
         await signInWithCredential(auth, credential);
 
         console.log("✅ Google giriş tamam");
-        navigation.replace("HomeTabs");
+        navigation.replace("Main");
       } catch (err) {
         console.error("❌ Google login hata:", err);
         Alert.alert("Google Girişi Hatası", err?.message || "Giriş başarısız.");
@@ -274,12 +284,14 @@ export default function LoginScreen() {
             />
           </View>
 
-          {/* Test info */}
-          <View style={styles.testInfo}>
-            <Text style={styles.testInfoText}>💡 Test için:</Text>
-            <Text style={styles.testInfoText}>Email: test@test.com</Text>
-            <Text style={styles.testInfoText}>Şifre: test123</Text>
-          </View>
+          {/* Test info - Only visible in development mode */}
+          {__DEV__ && (
+            <View style={styles.testInfo}>
+              <Text style={styles.testInfoText}>💡 Test için (sadece dev mode):</Text>
+              <Text style={styles.testInfoText}>Email: test@test.com</Text>
+              <Text style={styles.testInfoText}>Şifre: test123</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

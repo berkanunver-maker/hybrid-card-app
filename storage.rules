@@ -1,0 +1,68 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidImageSize() {
+      // Max 10MB for images
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
+    function isValidAudioSize() {
+      // Max 25MB for audio files
+      return request.resource.size < 25 * 1024 * 1024;
+    }
+
+    function isValidImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isValidAudioType() {
+      return request.resource.contentType.matches('audio/.*');
+    }
+
+    // Card images - stored in cards/{userId}/{cardId}
+    match /cards/{userId}/{cardId} {
+      // Only the owner can read, write, and delete their card images
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) &&
+        isValidImageType() &&
+        isValidImageSize();
+      allow delete: if isOwner(userId);
+    }
+
+    // Voice notes - stored in voice-notes/{userId}/{noteId}
+    match /voice-notes/{userId}/{noteId} {
+      // Only the owner can read, write, and delete their voice notes
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) &&
+        isValidAudioType() &&
+        isValidAudioSize();
+      allow delete: if isOwner(userId);
+    }
+
+    // Profile pictures - stored in profiles/{userId}/avatar
+    match /profiles/{userId}/{fileName} {
+      // Only the owner can read, write, and delete their profile picture
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) &&
+        isValidImageType() &&
+        isValidImageSize();
+      allow delete: if isOwner(userId);
+    }
+
+    // Deny all other access by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

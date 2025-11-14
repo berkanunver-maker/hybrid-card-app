@@ -59,8 +59,8 @@ Google ile giriş özelliğini aktif etmek için:
 - **Create Credentials** → **OAuth 2.0 Client ID**
 - Üç farklı Client ID oluşturun:
   - **Web Application** (tüm platformlar için)
-  - **iOS** (iOS uygulaması için)
-  - **Android** (Android uygulaması için)
+  - **iOS** (iOS uygulaması için - Bundle ID: `com.beko.hybridcard`)
+  - **Android** (Android uygulaması için - Package Name: `com.beko.hybridcard`)
 
 **2. `.env` dosyasına ekleyin:**
 ```env

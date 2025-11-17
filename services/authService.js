@@ -8,23 +8,45 @@ const auth = getAuth(app);
 
 export const AuthService = {
   /**
-   * 🔐 E-posta ile giriş yap veya kullanıcı oluştur
-   * Eğer kullanıcı yoksa otomatik oluşturur.
+   * 🔐 E-posta ile giriş yap
+   * @param {string} email - User email
+   * @param {string} password - User password (REQUIRED - no default for security)
    */
-  loginOrRegister: async (email, password = "default123") => {
+  login: async (email, password) => {
+    if (!email || !password) {
+      throw new Error('Email and password are required');
+    }
+
     try {
-      // Giriş yapmayı dene
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log("✅ Kullanıcı girişi:", userCredential.user.email);
+      if (__DEV__) {
+        console.log("✅ Kullanıcı girişi:", userCredential.user.email);
+      }
       return userCredential.user;
     } catch (error) {
-      // Eğer kullanıcı yoksa, oluştur
-      if (error.code === "auth/user-not-found") {
-        const newUser = await createUserWithEmailAndPassword(auth, email, password);
+      console.error("❌ Auth error:", error.code);
+      throw error;
+    }
+  },
+
+  /**
+   * 📝 Yeni kullanıcı kaydet
+   * @param {string} email - User email
+   * @param {string} password - User password (REQUIRED - no default for security)
+   */
+  register: async (email, password) => {
+    if (!email || !password) {
+      throw new Error('Email and password are required');
+    }
+
+    try {
+      const newUser = await createUserWithEmailAndPassword(auth, email, password);
+      if (__DEV__) {
         console.log("🆕 Yeni kullanıcı oluşturuldu:", newUser.user.email);
-        return newUser.user;
       }
-      console.error("❌ Auth error:", error);
+      return newUser.user;
+    } catch (error) {
+      console.error("❌ Register error:", error.code);
       throw error;
     }
   },

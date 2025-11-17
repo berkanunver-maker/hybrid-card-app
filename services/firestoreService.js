@@ -456,6 +456,49 @@ export const FirestoreService = {
       throw error;
     }
   },
+
+  // ========================================
+  // 👤 KULLANICI YÖNETİMİ
+  // ========================================
+
+  /**
+   * Kullanıcı profil bilgilerini güncelle veya oluştur
+   */
+  updateUserProfile: async (userId, profileData) => {
+    try {
+      const userDocRef = doc(usersRef, userId);
+
+      await setDoc(userDocRef, {
+        ...profileData,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true }); // merge: true ile mevcut veriyi korur, sadece yeni alanları ekler
+
+      console.log("✅ Kullanıcı profili güncellendi:", userId);
+      return { success: true };
+    } catch (error) {
+      console.error("❌ updateUserProfile error:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Kullanıcı profil bilgilerini getir
+   */
+  getUserProfile: async (userId) => {
+    try {
+      const userDocRef = doc(usersRef, userId);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        return { id: userDoc.id, ...userDoc.data() };
+      }
+
+      return null;
+    } catch (error) {
+      console.error("❌ getUserProfile error:", error);
+      throw error;
+    }
+  },
 };
 
 export { firebaseConfig, app, db, auth };

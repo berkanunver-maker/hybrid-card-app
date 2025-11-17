@@ -5,7 +5,7 @@ import { colors } from "../utils/colors";
 
 // 📄 Ekranlar
 import HomeScreen from "../screens/HomeScreen";
-import ProfileSetupScreen from "../screens/ProfileSetupScreen";
+import ProfileScreen from "../screens/ProfileScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -32,7 +32,7 @@ export default function TabNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: "Ana Sayfa" }} />
-      <Tab.Screen name="Profile" component={ProfileSetupScreen} options={{ title: "Profil" }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: "Profil" }} />
     </Tab.Navigator>
   );
 }

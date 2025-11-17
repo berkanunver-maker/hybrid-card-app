@@ -285,7 +285,7 @@ export default function HomeScreen() {
             <Text style={styles.quickAccessCount}>{favoriteCount} kart</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.quickAccessButton} onPress={() => Alert.alert("Tüm Kartlar", "Yakında!")}>
+          <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate("AllCards")}>
             <View style={styles.quickAccessIconContainer}>
               <Ionicons name="albums" size={24} color={colors.primary} />
             </View>

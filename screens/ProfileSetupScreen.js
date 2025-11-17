@@ -7,19 +7,50 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { getAuth } from "firebase/auth";
+import { FirestoreService } from "../services/firestoreService";
 
 export default function ProfileSetupScreen() {
   const navigation = useNavigation();
+  const auth = getAuth();
 
   const [fullName, setFullName] = useState("");
   const [company, setCompany] = useState("");
   const [jobTitle, setJobTitle] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleFinish = () => {
-    console.log("Profil:", { fullName, company, jobTitle });
-    navigation.replace("Main"); // ✅ replace: geri dönmeyi engeller
+  const handleFinish = async () => {
+    const userId = auth.currentUser?.uid;
+
+    if (!userId) {
+      Alert.alert("Hata", "Kullanıcı oturumu bulunamadı.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Profil bilgilerini Firestore'a kaydet
+      await FirestoreService.updateUserProfile(userId, {
+        displayName: fullName,
+        company: company,
+        jobTitle: jobTitle,
+        profileCompleted: true,
+        createdAt: new Date().toISOString(),
+      });
+
+      console.log("✅ Profil kaydedildi:", { fullName, company, jobTitle });
+      navigation.replace("Main"); // ✅ replace: geri dönmeyi engeller
+    } catch (error) {
+      console.error("❌ Profil kaydetme hatası:", error);
+      Alert.alert("Hata", "Profil bilgileri kaydedilemedi. Lütfen tekrar deneyin.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSkip = () => {
@@ -72,12 +103,16 @@ export default function ProfileSetupScreen() {
         <TouchableOpacity
           style={[
             styles.button,
-            (!fullName || !company || !jobTitle) && styles.buttonDisabled,
+            (loading || !fullName || !company || !jobTitle) && styles.buttonDisabled,
           ]}
           onPress={handleFinish}
-          disabled={!fullName || !company || !jobTitle}
+          disabled={loading || !fullName || !company || !jobTitle}
         >
-          <Text style={styles.buttonText}>Finish</Text>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Finish</Text>
+          )}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

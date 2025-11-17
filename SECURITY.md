@@ -1,5 +1,11 @@
 # Security Documentation
 
+## 🔒 Comprehensive Security Implementation
+
+Bu döküman, Hybrid Card App'in tüm güvenlik önlemlerini detaylandırır.
+
+---
+
 ## ✅ Completed Security Fixes
 
 The following critical security vulnerabilities have been fixed in this commit:
@@ -117,6 +123,78 @@ Before deploying to production:
 
 ---
 
+## 🆕 NEW: Advanced Security Features (Latest Update)
+
+### 6. ✅ Security Configuration System
+**File:** `utils/security.config.js`
+
+Centralized security configuration with:
+- Environment-based settings (dev/production)
+- API request timeouts and retry limits
+- Authentication security rules
+- File upload restrictions
+- Input validation limits
+- Rate limiting configuration
+- Logging security (sensitive data redaction)
+- SSL Pinning configuration
+- Network security policies
+
+**Usage:**
+```javascript
+import { validateSecurityConfig, secureLog } from './utils/security.config';
+
+// Validate on app start
+validateSecurityConfig();
+
+// Use secure logging (auto-redacts passwords, tokens, etc.)
+secureLog.log('User data:', userData); // passwords will be ***REDACTED***
+```
+
+### 7. ✅ Client-Side Rate Limiting
+**File:** `utils/rateLimiter.js`
+
+Prevents API abuse with:
+- Maximum 60 requests per minute (configurable)
+- Minimum 1 second between requests
+- Exponential backoff retry mechanism
+- Per-endpoint rate limiting
+
+**Usage:**
+```javascript
+import rateLimiter, { withRateLimit } from './utils/rateLimiter';
+
+// Check if allowed
+if (rateLimiter.isAllowed('uploadCard')) {
+  await uploadCard(data);
+}
+
+// Or use decorator
+const rateLimitedUpload = withRateLimit(uploadCard, 'uploadCard');
+await rateLimitedUpload(data);
+```
+
+### 8. ✅ Hardcoded Credentials Removed
+**File:** `services/authService.js`
+
+- Removed default password parameter (`default123`)
+- All passwords now required explicitly
+- Separated `login` and `register` functions
+- Added parameter validation
+- Implemented secure logging
+
+### 9. ✅ Backend Security Guide
+**File:** `BACKEND_SECURITY.md`
+
+Complete Firebase Functions implementation guide with:
+- JWT token verification middleware
+- Server-side rate limiting (Express)
+- Authorization layer (role-based access)
+- Request validation & sanitization
+- CORS & Helmet security headers
+- Production deployment checklist
+
+---
+
 ## 🔒 Additional Security Recommendations
 
 ### Medium Priority
@@ -162,5 +240,6 @@ If you have questions about these security fixes:
 
 ---
 
-**Last Updated:** 2025-11-14
+**Last Updated:** 2025-11-17
 **Security Audit Completed By:** Claude Code Assistant
+**Latest Enhancement:** Advanced Security Features (Rate Limiting, Security Config, Backend Guide)

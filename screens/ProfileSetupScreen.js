@@ -12,11 +12,13 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { getAuth } from "firebase/auth";
+import { useTranslation } from "react-i18next";
 import { FirestoreService } from "../services/firestoreService";
 
 export default function ProfileSetupScreen() {
   const navigation = useNavigation();
   const auth = getAuth();
+  const { t } = useTranslation();
 
   const [fullName, setFullName] = useState("");
   const [company, setCompany] = useState("");
@@ -27,7 +29,7 @@ export default function ProfileSetupScreen() {
     const userId = auth.currentUser?.uid;
 
     if (!userId) {
-      Alert.alert("Hata", "Kullanıcı oturumu bulunamadı.");
+      Alert.alert(t('common.error'), t('profileSetup.errors.userNotFound'));
       return;
     }
 
@@ -47,7 +49,7 @@ export default function ProfileSetupScreen() {
       navigation.replace("Main"); // ✅ replace: geri dönmeyi engeller
     } catch (error) {
       console.error("❌ Profil kaydetme hatası:", error);
-      Alert.alert("Hata", "Profil bilgileri kaydedilemedi. Lütfen tekrar deneyin.");
+      Alert.alert(t('common.error'), t('profileSetup.errors.saveFailed'));
     } finally {
       setLoading(false);
     }
@@ -63,37 +65,37 @@ export default function ProfileSetupScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.header}>
-        <Text style={styles.title}>Complete Your Digital Business Card</Text>
+        <Text style={styles.title}>{t('profileSetup.title')}</Text>
         <TouchableOpacity onPress={handleSkip}>
-          <Text style={styles.skipButton}>Skip</Text>
+          <Text style={styles.skipButton}>{t('profileSetup.skip')}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.label}>Full Name</Text>
+        <Text style={styles.label}>{t('profileSetup.fullNameLabel')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter your name (required)"
+          placeholder={t('profileSetup.fullNamePlaceholder')}
           placeholderTextColor="#666"
           value={fullName}
           onChangeText={setFullName}
           autoCapitalize="words"
         />
 
-        <Text style={styles.label}>Company</Text>
+        <Text style={styles.label}>{t('profileSetup.companyLabel')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter your company (required)"
+          placeholder={t('profileSetup.companyPlaceholder')}
           placeholderTextColor="#666"
           value={company}
           onChangeText={setCompany}
           autoCapitalize="words"
         />
 
-        <Text style={styles.label}>Job Title</Text>
+        <Text style={styles.label}>{t('profileSetup.jobTitleLabel')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter your job title (required)"
+          placeholder={t('profileSetup.jobTitlePlaceholder')}
           placeholderTextColor="#666"
           value={jobTitle}
           onChangeText={setJobTitle}
@@ -111,7 +113,7 @@ export default function ProfileSetupScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Finish</Text>
+            <Text style={styles.buttonText}>{t('profileSetup.finishButton')}</Text>
           )}
         </TouchableOpacity>
       </View>

@@ -12,13 +12,16 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { getAuth, signOut } from "firebase/auth";
+import { useTranslation } from "react-i18next";
 import { FirestoreService } from "../services/firestoreService";
 import { colors } from "../utils/colors";
+import LanguageSelector from "../components/LanguageSelector";
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
   const auth = getAuth();
   const user = auth.currentUser;
+  const { t } = useTranslation();
 
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,12 +46,12 @@ export default function ProfileScreen() {
 
   const handleLogout = () => {
     Alert.alert(
-      "Çıkış Yap",
-      "Hesabınızdan çıkmak istediğinizden emin misiniz?",
+      t('profile.logout'),
+      t('profile.logoutConfirm.message'),
       [
-        { text: "İptal", style: "cancel" },
+        { text: t('profile.logoutConfirm.cancel'), style: "cancel" },
         {
-          text: "Çıkış Yap",
+          text: t('profile.logoutConfirm.logout'),
           style: "destructive",
           onPress: async () => {
             try {
@@ -57,7 +60,7 @@ export default function ProfileScreen() {
               // Navigation otomatik olarak Login ekranına yönlendirecek (onAuthStateChanged)
             } catch (error) {
               console.error("❌ Çıkış hatası:", error);
-              Alert.alert("Hata", "Çıkış yapılamadı.");
+              Alert.alert(t('common.error'), t('profile.errors.logoutFailed'));
             }
           },
         },
@@ -73,7 +76,7 @@ export default function ProfileScreen() {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Profil yükleniyor...</Text>
+        <Text style={styles.loadingText}>{t('profile.loading')}</Text>
       </View>
     );
   }
@@ -82,7 +85,7 @@ export default function ProfileScreen() {
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profil</Text>
+        <Text style={styles.headerTitle}>{t('profile.title')}</Text>
       </View>
 
       {/* Profile Info */}
@@ -114,67 +117,70 @@ export default function ProfileScreen() {
 
         <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
           <Ionicons name="pencil" size={20} color={colors.primary} />
-          <Text style={styles.editButtonText}>Düzenle</Text>
+          <Text style={styles.editButtonText}>{t('profile.editButton')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Menu Items */}
       <View style={styles.menuSection}>
-        <Text style={styles.sectionTitle}>AYARLAR</Text>
+        <Text style={styles.sectionTitle}>{t('profile.settings')}</Text>
 
         <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => Alert.alert("Bildirim Ayarları", "Yakında!")}
+          onPress={() => Alert.alert(t('profile.notifications'), t('common.comingSoon'))}
         >
           <View style={styles.menuItemLeft}>
             <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
-            <Text style={styles.menuItemText}>Bildirim Ayarları</Text>
+            <Text style={styles.menuItemText}>{t('profile.notifications')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => Alert.alert("Gizlilik", "Yakında!")}
+          onPress={() => Alert.alert(t('profile.privacy'), t('common.comingSoon'))}
         >
           <View style={styles.menuItemLeft}>
             <Ionicons name="shield-outline" size={24} color={colors.textPrimary} />
-            <Text style={styles.menuItemText}>Gizlilik</Text>
+            <Text style={styles.menuItemText}>{t('profile.privacy')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => Alert.alert("Yardım & Destek", "Yakında!")}
+          onPress={() => Alert.alert(t('profile.helpSupport'), t('common.comingSoon'))}
         >
           <View style={styles.menuItemLeft}>
             <Ionicons name="help-circle-outline" size={24} color={colors.textPrimary} />
-            <Text style={styles.menuItemText}>Yardım & Destek</Text>
+            <Text style={styles.menuItemText}>{t('profile.helpSupport')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => Alert.alert("Hakkında", "Hybrid Card App v1.0.0\n\nBusiness card digitization app powered by AI.")}
+          onPress={() => Alert.alert(t('profile.about'), t('profile.aboutText', { version: '1.0.0' }))}
         >
           <View style={styles.menuItemLeft}>
             <Ionicons name="information-circle-outline" size={24} color={colors.textPrimary} />
-            <Text style={styles.menuItemText}>Hakkında</Text>
+            <Text style={styles.menuItemText}>{t('profile.about')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
+
+        {/* Language Selector */}
+        <LanguageSelector />
       </View>
 
       {/* Logout Button */}
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
-        <Text style={styles.logoutButtonText}>Çıkış Yap</Text>
+        <Text style={styles.logoutButtonText}>{t('profile.logout')}</Text>
       </TouchableOpacity>
 
       {/* App Version */}
-      <Text style={styles.versionText}>Version 1.0.0</Text>
+      <Text style={styles.versionText}>{t('profile.version', { version: '1.0.0' })}</Text>
     </ScrollView>
   );
 }

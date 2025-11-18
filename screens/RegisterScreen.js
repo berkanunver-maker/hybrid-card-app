@@ -14,11 +14,13 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { useTranslation } from "react-i18next";
 import { validateEmail, validatePassword, validateDisplayName } from "../utils/validation";
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
   const auth = getAuth();
+  const { t } = useTranslation();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -57,7 +59,7 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     const err = validate();
     if (err) {
-      Alert.alert("Uyarı", err);
+      Alert.alert(t('common.warning'), err);
       return;
     }
 
@@ -67,18 +69,18 @@ export default function RegisterScreen() {
       // görünen ad
       await updateProfile(cred.user, { displayName: fullName.trim() });
 
-      Alert.alert("Hoş geldiniz!", "Hesabınız oluşturuldu.");
+      Alert.alert(t('common.success'), t('register.signUpButton'));
       // dilersen ProfileSetup'a yönlendirebilirsin:
       navigation.replace("ProfileSetup");
       // veya direkt ana sekmelere:
       // navigation.replace("HomeTabs");
     } catch (error) {
       console.error("❌ Kayıt hatası:", error);
-      let msg = "Kayıt yapılamadı.";
-      if (error?.code === "auth/email-already-in-use") msg = "Bu e-posta zaten kayıtlı.";
-      if (error?.code === "auth/invalid-email") msg = "Geçersiz e-posta.";
-      if (error?.code === "auth/weak-password") msg = "Şifre zayıf.";
-      Alert.alert("Hata", msg);
+      let msg = t('register.errors.emailInvalid');
+      if (error?.code === "auth/email-already-in-use") msg = t('register.errors.emailInUse');
+      if (error?.code === "auth/invalid-email") msg = t('register.errors.emailInvalid');
+      if (error?.code === "auth/weak-password") msg = t('register.errors.passwordTooShort');
+      Alert.alert(t('common.error'), msg);
     } finally {
       setLoading(false);
     }
@@ -91,14 +93,12 @@ export default function RegisterScreen() {
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View style={styles.content}>
-          <Text style={styles.title}>Create account</Text>
-          <Text style={styles.subtitle}>
-            Aşağıdaki bilgileri doldurarak hızlıca kayıt olabilirsiniz.
-          </Text>
+          <Text style={styles.title}>{t('register.title')}</Text>
+          <Text style={styles.subtitle}>{t('register.subtitle')}</Text>
 
           <TextInput
             style={styles.input}
-            placeholder="Ad Soyad"
+            placeholder={t('register.fullNamePlaceholder')}
             placeholderTextColor="#666"
             value={fullName}
             onChangeText={setFullName}
@@ -107,7 +107,7 @@ export default function RegisterScreen() {
 
           <TextInput
             style={styles.input}
-            placeholder="E-posta adresi"
+            placeholder={t('register.emailPlaceholder')}
             placeholderTextColor="#666"
             keyboardType="email-address"
             autoCapitalize="none"
@@ -120,7 +120,7 @@ export default function RegisterScreen() {
           <View style={styles.pwdRow}>
             <TextInput
               style={[styles.input, { flex: 1, marginBottom: 0 }]}
-              placeholder="Şifre (min 8 karakter, büyük/küçük harf, rakam)"
+              placeholder={t('register.passwordPlaceholder')}
               placeholderTextColor="#666"
               value={password}
               onChangeText={setPassword}
@@ -135,7 +135,7 @@ export default function RegisterScreen() {
               disabled={loading}
             >
               <Text style={{ color: "#7B61FF", fontWeight: "600" }}>
-                {showPwd ? "Gizle" : "Göster"}
+                {showPwd ? t('login.hidePassword') : t('login.showPassword')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -145,14 +145,14 @@ export default function RegisterScreen() {
             onPress={handleRegister}
             disabled={loading}
           >
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign up</Text>}
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('register.signUpButton')}</Text>}
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={{ marginTop: 16 }}
           >
-            <Text style={styles.backText}>← Back to Login</Text>
+            <Text style={styles.backText}>{t('register.backToLogin')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

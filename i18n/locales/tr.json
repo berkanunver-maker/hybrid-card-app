@@ -1,0 +1,263 @@
+{
+  "common": {
+    "loading": "Yükleniyor...",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "back": "Geri",
+    "continue": "Devam Et",
+    "skip": "Atla",
+    "finish": "Tamamla",
+    "required": "Zorunlu",
+    "optional": "İsteğe Bağlı",
+    "search": "Ara",
+    "filter": "Filtrele",
+    "error": "Hata",
+    "success": "Başarılı",
+    "warning": "Uyarı",
+    "info": "Bilgi",
+    "comingSoon": "Yakında!"
+  },
+
+  "tabs": {
+    "home": "Ana Sayfa",
+    "profile": "Profil"
+  },
+
+  "splash": {
+    "title": "Hybrid Card App",
+    "subtitle": "Yükleniyor...",
+    "authChecking": "Giriş mevcut! Yönlendiriliyor...",
+    "loginRequired": "Giriş gerekli..."
+  },
+
+  "login": {
+    "title": "Hesabınıza Giriş Yapın",
+    "subtitle": "E-posta ve şifrenizle giriş yapın veya sosyal medya ile devam edin",
+    "emailPlaceholder": "E-posta adresi",
+    "passwordPlaceholder": "Şifre",
+    "showPassword": "Göster",
+    "hidePassword": "Gizle",
+    "signInButton": "Giriş Yap",
+    "orSignInWith": "─── Veya bunlarla giriş yap ───",
+    "googleLogin": "Google ile Giriş Yap",
+    "appleLogin": "Apple ile Giriş Yap",
+    "testCredentials": "💡 Test için (sadece dev mode):",
+    "createAccount": "Hesap oluştur",
+    "forgotPassword": "Şifremi unuttum?",
+    "errors": {
+      "emailRequired": "Lütfen email giriniz",
+      "emailInvalid": "Geçersiz email formatı",
+      "passwordRequired": "Lütfen şifre giriniz",
+      "passwordTooShort": "Şifre en az 6 karakter olmalıdır",
+      "userNotFound": "Kullanıcı bulunamadı",
+      "wrongPassword": "Yanlış şifre",
+      "tooManyAttempts": "Çok fazla deneme. Lütfen daha sonra tekrar deneyin."
+    }
+  },
+
+  "register": {
+    "title": "Hesap Oluştur",
+    "subtitle": "Aşağıdaki bilgileri doldurarak hızlıca kayıt olabilirsiniz",
+    "fullNamePlaceholder": "Ad Soyad",
+    "emailPlaceholder": "E-posta adresi",
+    "passwordPlaceholder": "Şifre (min 8, büyük/küçük harf, rakam)",
+    "signUpButton": "Kayıt Ol",
+    "backToLogin": "← Girişe Dön",
+    "errors": {
+      "nameRequired": "Lütfen ad soyad giriniz",
+      "nameTooShort": "İsim en az 2 karakter olmalı",
+      "emailRequired": "Lütfen e-posta giriniz",
+      "emailInvalid": "Geçersiz e-posta",
+      "passwordTooShort": "Şifre en az 8 karakter olmalı",
+      "passwordNoUppercase": "Şifre en az bir büyük harf içermeli",
+      "passwordNoLowercase": "Şifre en az bir küçük harf içermeli",
+      "passwordNoNumber": "Şifre en az bir rakam içermeli",
+      "emailInUse": "Bu e-posta zaten kayıtlı"
+    }
+  },
+
+  "profileSetup": {
+    "title": "Dijital Kartvizitinizi Tamamlayın",
+    "skip": "Atla",
+    "fullNameLabel": "Ad Soyad",
+    "fullNamePlaceholder": "Adınızı girin (zorunlu)",
+    "companyLabel": "Şirket",
+    "companyPlaceholder": "Şirketinizi girin (zorunlu)",
+    "jobTitleLabel": "İş Ünvanı",
+    "jobTitlePlaceholder": "İş ünvanınızı girin (zorunlu)",
+    "finishButton": "Tamamla",
+    "errors": {
+      "userNotFound": "Kullanıcı oturumu bulunamadı",
+      "saveFailed": "Profil bilgileri kaydedilemedi. Lütfen tekrar deneyin."
+    }
+  },
+
+  "home": {
+    "hello": "Merhaba,",
+    "cardStats": "{{count}} kartvizit • {{folders}} klasör",
+    "searchPlaceholder": "İsim, şirket, hizmet ara...",
+    "favorites": "Favoriler",
+    "allCards": "Tüm Kartlar",
+    "cards": "kart",
+    "recentCards": "📌 SON EKLENENLER",
+    "folders": "📁 KLASÖRLER",
+    "newFolder": "Yeni Klasör",
+    "noFolders": "Henüz klasör yok",
+    "noFoldersSubtext": "\"Yeni Klasör\" butonuna tıklayarak başlayın",
+    "scanNewCard": "Yeni Kart Tara",
+    "notifications": "Bildirimler",
+    "stats": "İstatistikler",
+    "folderMenu": {
+      "edit": "Düzenle",
+      "exportExcel": "Excel İndir",
+      "delete": "Sil"
+    },
+    "timeAgo": {
+      "justNow": "Az önce",
+      "minutesAgo": "{{minutes}} dakika önce",
+      "hoursAgo": "{{hours}} saat önce",
+      "yesterday": "Dün",
+      "daysAgo": "{{days}} gün önce"
+    }
+  },
+
+  "allCards": {
+    "title": "Tüm Kartlar",
+    "cardCount": "{{count}} kart",
+    "loading": "Kartlar yükleniyor...",
+    "empty": "Henüz kart eklenmemiş",
+    "emptySubtext": "\"Yeni Kart Tara\" butonunu kullanarak kart ekleyebilirsiniz",
+    "unknown": "İsimsiz"
+  },
+
+  "profile": {
+    "title": "Profil",
+    "loading": "Profil yükleniyor...",
+    "editButton": "Düzenle",
+    "settings": "AYARLAR",
+    "notifications": "Bildirim Ayarları",
+    "privacy": "Gizlilik",
+    "helpSupport": "Yardım & Destek",
+    "about": "Hakkında",
+    "language": "Dil Seçimi",
+    "logout": "Çıkış Yap",
+    "version": "Version {{version}}",
+    "aboutText": "Hybrid Card App v{{version}}\n\nBusiness card digitization app powered by AI.",
+    "logoutConfirm": {
+      "title": "Çıkış Yap",
+      "message": "Hesabınızdan çıkmak istediğinizden emin misiniz?",
+      "cancel": "İptal",
+      "logout": "Çıkış Yap"
+    },
+    "errors": {
+      "logoutFailed": "Çıkış yapılamadı."
+    }
+  },
+
+  "search": {
+    "title": "Ara",
+    "placeholder": "İsim, şirket veya hizmet ara...",
+    "filters": "Filtreler",
+    "onlyFavorites": "Sadece Favoriler",
+    "category": "Kategori",
+    "allCategories": "Tüm Kategoriler",
+    "qaScore": "QA Skoru",
+    "results": "{{count}} sonuç bulundu",
+    "noResults": "Sonuç bulunamadı",
+    "searchHistory": "Arama Geçmişi",
+    "clearHistory": "Geçmişi Temizle"
+  },
+
+  "cardDetail": {
+    "title": "Kart Detayı",
+    "newCard": "Yeni Kart",
+    "edit": "Düzenle",
+    "save": "Kaydet",
+    "favorite": "Favori",
+    "menu": "Menü",
+    "move": "Taşı",
+    "delete": "Sil",
+    "fields": {
+      "name": "İsim",
+      "company": "Şirket",
+      "title": "Ünvan",
+      "email": "E-posta",
+      "phone": "Telefon",
+      "address": "Adres",
+      "website": "Website",
+      "notes": "Notlar"
+    },
+    "voiceNote": "Ses Notu",
+    "playVoice": "Dinle",
+    "stopVoice": "Durdur",
+    "qaScore": "QA Skoru: {{score}}%",
+    "missingFields": "Eksik Alanlar",
+    "saving": "Kaydediliyor...",
+    "errors": {
+      "saveFailed": "Kart kaydedilemedi",
+      "deleteFailed": "Kart silinemedi",
+      "notFound": "Kart verisi bulunamadı"
+    }
+  },
+
+  "camera": {
+    "title": "Kart Tara",
+    "permissionDenied": "Kamera izni gerekli",
+    "permissionMessage": "Kartvizit taramak için kamera iznini etkinleştirin.",
+    "openSettings": "Ayarları Aç",
+    "capture": "Fotoğraf Çek",
+    "confirm": "Onayla",
+    "retake": "Tekrar Çek",
+    "processing": "İşleniyor...",
+    "uploading": "Görsel yükleniyor...",
+    "analyzing": "AI analizi yapılıyor...",
+    "complete": "Tamamlandı!",
+    "errors": {
+      "captureFailed": "Fotoğraf çekilemedi",
+      "uploadFailed": "Yükleme başarısız",
+      "analysisFailed": "Analiz başarısız"
+    }
+  },
+
+  "folder": {
+    "title": "Klasör",
+    "cardCount": "{{count}} kart",
+    "lastAdded": "Son ekleme: {{time}}",
+    "exportExcel": "Excel'e Aktar",
+    "deleteFolder": "Klasörü Sil",
+    "moveCards": "Kartları taşı",
+    "deleteCards": "Kartları sil",
+    "selectFolder": "Klasör seçin",
+    "empty": "Bu klasörde henüz kart yok",
+    "emptySubtext": "\"Yeni Kart Tara\" butonuyla kart ekleyebilirsiniz"
+  },
+
+  "favorites": {
+    "title": "Favoriler",
+    "empty": "Henüz favori kart eklenmemiş",
+    "emptySubtext": "Kartları favorilere eklemek için ⭐ ikonuna tıklayın"
+  },
+
+  "validation": {
+    "emailInvalid": "Geçersiz email formatı",
+    "emailRequired": "Email gerekli",
+    "emailTooLong": "Email çok uzun (max 254 karakter)",
+    "passwordRequired": "Şifre gerekli",
+    "passwordTooShort": "Şifre en az {{min}} karakter olmalı",
+    "passwordTooLong": "Şifre çok uzun (max {{max}} karakter)",
+    "passwordNoUppercase": "Şifre en az bir büyük harf içermeli",
+    "passwordNoLowercase": "Şifre en az bir küçük harf içermeli",
+    "passwordNoNumber": "Şifre en az bir rakam içermeli",
+    "passwordNoSpecialChar": "Şifre en az bir özel karakter içermeli",
+    "passwordTooCommon": "Bu şifre çok yaygın. Lütfen daha güçlü bir şifre seçin",
+    "nameRequired": "İsim gerekli",
+    "nameTooShort": "İsim en az {{min}} karakter olmalı",
+    "nameTooLong": "İsim çok uzun (max {{max}} karakter)",
+    "nameInvalidChars": "İsim sadece harf, boşluk, tire ve kesme işareti içerebilir",
+    "phoneRequired": "Telefon numarası gerekli",
+    "phoneInvalid": "Geçersiz telefon numarası formatı",
+    "phoneDigits": "Telefon numarası {{min}}-{{max}} rakam içermeli"
+  }
+}

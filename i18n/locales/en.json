@@ -1,0 +1,263 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "continue": "Continue",
+    "skip": "Skip",
+    "finish": "Finish",
+    "required": "Required",
+    "optional": "Optional",
+    "search": "Search",
+    "filter": "Filter",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Info",
+    "comingSoon": "Coming Soon!"
+  },
+
+  "tabs": {
+    "home": "Home",
+    "profile": "Profile"
+  },
+
+  "splash": {
+    "title": "Hybrid Card App",
+    "subtitle": "Loading...",
+    "authChecking": "Session found! Redirecting...",
+    "loginRequired": "Login required..."
+  },
+
+  "login": {
+    "title": "Login to Your Account",
+    "subtitle": "Sign in with your email and password or continue with social media",
+    "emailPlaceholder": "Email address",
+    "passwordPlaceholder": "Password",
+    "showPassword": "Show",
+    "hidePassword": "Hide",
+    "signInButton": "Sign in",
+    "orSignInWith": "─── Or sign in with ───",
+    "googleLogin": "Sign in with Google",
+    "appleLogin": "Sign in with Apple",
+    "testCredentials": "💡 For testing (dev mode only):",
+    "createAccount": "Create account",
+    "forgotPassword": "Forgot password?",
+    "errors": {
+      "emailRequired": "Please enter email",
+      "emailInvalid": "Invalid email format",
+      "passwordRequired": "Please enter password",
+      "passwordTooShort": "Password must be at least 6 characters",
+      "userNotFound": "User not found",
+      "wrongPassword": "Wrong password",
+      "tooManyAttempts": "Too many attempts. Please try again later."
+    }
+  },
+
+  "register": {
+    "title": "Create account",
+    "subtitle": "Fill in the information below to quickly register",
+    "fullNamePlaceholder": "Full Name",
+    "emailPlaceholder": "Email address",
+    "passwordPlaceholder": "Password (min 8, upper/lower case, number)",
+    "signUpButton": "Sign up",
+    "backToLogin": "← Back to Login",
+    "errors": {
+      "nameRequired": "Please enter your name",
+      "nameTooShort": "Name must be at least 2 characters",
+      "emailRequired": "Please enter email",
+      "emailInvalid": "Invalid email",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "passwordNoUppercase": "Password must contain at least one uppercase letter",
+      "passwordNoLowercase": "Password must contain at least one lowercase letter",
+      "passwordNoNumber": "Password must contain at least one number",
+      "emailInUse": "This email is already registered"
+    }
+  },
+
+  "profileSetup": {
+    "title": "Complete Your Digital Business Card",
+    "skip": "Skip",
+    "fullNameLabel": "Full Name",
+    "fullNamePlaceholder": "Enter your name (required)",
+    "companyLabel": "Company",
+    "companyPlaceholder": "Enter your company (required)",
+    "jobTitleLabel": "Job Title",
+    "jobTitlePlaceholder": "Enter your job title (required)",
+    "finishButton": "Finish",
+    "errors": {
+      "userNotFound": "User session not found",
+      "saveFailed": "Profile information could not be saved. Please try again."
+    }
+  },
+
+  "home": {
+    "hello": "Hello,",
+    "cardStats": "{{count}} business cards • {{folders}} folders",
+    "searchPlaceholder": "Search name, company, service...",
+    "favorites": "Favorites",
+    "allCards": "All Cards",
+    "cards": "cards",
+    "recentCards": "📌 RECENTLY ADDED",
+    "folders": "📁 FOLDERS",
+    "newFolder": "New Folder",
+    "noFolders": "No folders yet",
+    "noFoldersSubtext": "Click \"New Folder\" button to get started",
+    "scanNewCard": "Scan New Card",
+    "notifications": "Notifications",
+    "stats": "Statistics",
+    "folderMenu": {
+      "edit": "Edit",
+      "exportExcel": "Export to Excel",
+      "delete": "Delete"
+    },
+    "timeAgo": {
+      "justNow": "Just now",
+      "minutesAgo": "{{minutes}} minutes ago",
+      "hoursAgo": "{{hours}} hours ago",
+      "yesterday": "Yesterday",
+      "daysAgo": "{{days}} days ago"
+    }
+  },
+
+  "allCards": {
+    "title": "All Cards",
+    "cardCount": "{{count}} cards",
+    "loading": "Loading cards...",
+    "empty": "No cards added yet",
+    "emptySubtext": "Use \"Scan New Card\" button to add cards",
+    "unknown": "Unknown"
+  },
+
+  "profile": {
+    "title": "Profile",
+    "loading": "Loading profile...",
+    "editButton": "Edit",
+    "settings": "SETTINGS",
+    "notifications": "Notification Settings",
+    "privacy": "Privacy",
+    "helpSupport": "Help & Support",
+    "about": "About",
+    "language": "Language",
+    "logout": "Logout",
+    "version": "Version {{version}}",
+    "aboutText": "Hybrid Card App v{{version}}\n\nBusiness card digitization app powered by AI.",
+    "logoutConfirm": {
+      "title": "Logout",
+      "message": "Are you sure you want to logout?",
+      "cancel": "Cancel",
+      "logout": "Logout"
+    },
+    "errors": {
+      "logoutFailed": "Logout failed."
+    }
+  },
+
+  "search": {
+    "title": "Search",
+    "placeholder": "Search name, company or service...",
+    "filters": "Filters",
+    "onlyFavorites": "Favorites Only",
+    "category": "Category",
+    "allCategories": "All Categories",
+    "qaScore": "QA Score",
+    "results": "{{count}} results found",
+    "noResults": "No results found",
+    "searchHistory": "Search History",
+    "clearHistory": "Clear History"
+  },
+
+  "cardDetail": {
+    "title": "Card Details",
+    "newCard": "New Card",
+    "edit": "Edit",
+    "save": "Save",
+    "favorite": "Favorite",
+    "menu": "Menu",
+    "move": "Move",
+    "delete": "Delete",
+    "fields": {
+      "name": "Name",
+      "company": "Company",
+      "title": "Title",
+      "email": "Email",
+      "phone": "Phone",
+      "address": "Address",
+      "website": "Website",
+      "notes": "Notes"
+    },
+    "voiceNote": "Voice Note",
+    "playVoice": "Play",
+    "stopVoice": "Stop",
+    "qaScore": "QA Score: {{score}}%",
+    "missingFields": "Missing Fields",
+    "saving": "Saving...",
+    "errors": {
+      "saveFailed": "Failed to save card",
+      "deleteFailed": "Failed to delete card",
+      "notFound": "Card data not found"
+    }
+  },
+
+  "camera": {
+    "title": "Scan Card",
+    "permissionDenied": "Camera permission required",
+    "permissionMessage": "Enable camera permission to scan business cards.",
+    "openSettings": "Open Settings",
+    "capture": "Capture",
+    "confirm": "Confirm",
+    "retake": "Retake",
+    "processing": "Processing...",
+    "uploading": "Uploading image...",
+    "analyzing": "AI analyzing...",
+    "complete": "Complete!",
+    "errors": {
+      "captureFailed": "Failed to capture photo",
+      "uploadFailed": "Upload failed",
+      "analysisFailed": "Analysis failed"
+    }
+  },
+
+  "folder": {
+    "title": "Folder",
+    "cardCount": "{{count}} cards",
+    "lastAdded": "Last added: {{time}}",
+    "exportExcel": "Export to Excel",
+    "deleteFolder": "Delete Folder",
+    "moveCards": "Move cards",
+    "deleteCards": "Delete cards",
+    "selectFolder": "Select folder",
+    "empty": "No cards in this folder yet",
+    "emptySubtext": "Use \"Scan New Card\" button to add cards"
+  },
+
+  "favorites": {
+    "title": "Favorites",
+    "empty": "No favorite cards yet",
+    "emptySubtext": "Click the ⭐ icon to add cards to favorites"
+  },
+
+  "validation": {
+    "emailInvalid": "Invalid email format",
+    "emailRequired": "Email is required",
+    "emailTooLong": "Email is too long (max 254 characters)",
+    "passwordRequired": "Password is required",
+    "passwordTooShort": "Password must be at least {{min}} characters",
+    "passwordTooLong": "Password is too long (max {{max}} characters)",
+    "passwordNoUppercase": "Password must contain at least one uppercase letter",
+    "passwordNoLowercase": "Password must contain at least one lowercase letter",
+    "passwordNoNumber": "Password must contain at least one number",
+    "passwordNoSpecialChar": "Password must contain at least one special character",
+    "passwordTooCommon": "This password is too common. Please choose a stronger password",
+    "nameRequired": "Name is required",
+    "nameTooShort": "Name must be at least {{min}} characters",
+    "nameTooLong": "Name is too long (max {{max}} characters)",
+    "nameInvalidChars": "Name can only contain letters, spaces, hyphens, and apostrophes",
+    "phoneRequired": "Phone number is required",
+    "phoneInvalid": "Invalid phone number format",
+    "phoneDigits": "Phone number must contain {{min}}-{{max}} digits"
+  }
+}

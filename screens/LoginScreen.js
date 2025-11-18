@@ -19,6 +19,7 @@ import {
   GoogleAuthProvider,
   OAuthProvider,
 } from "firebase/auth";
+import { useTranslation } from "react-i18next";
 import { validateEmail } from "../utils/validation";
 
 import SocialButton from "../components/SocialButton";
@@ -42,6 +43,7 @@ const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_I
 export default function LoginScreen() {
   const navigation = useNavigation();
   const auth = getAuth();
+  const { t } = useTranslation();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -53,18 +55,18 @@ export default function LoginScreen() {
     // Validate email
     const emailValidation = validateEmail(email);
     if (!emailValidation.valid) {
-      Alert.alert("Hata", emailValidation.error);
+      Alert.alert(t('common.error'), emailValidation.error);
       return;
     }
 
     // Validate password is not empty
     if (!password.trim()) {
-      Alert.alert("Hata", "Lütfen şifre giriniz");
+      Alert.alert(t('common.error'), t('login.errors.passwordRequired'));
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert("Hata", "Şifre en az 6 karakter olmalıdır");
+      Alert.alert(t('common.error'), t('login.errors.passwordTooShort'));
       return;
     }
 
@@ -76,14 +78,11 @@ export default function LoginScreen() {
     } catch (error) {
       console.error("❌ Giriş hatası:", error);
       if (error?.code === "auth/user-not-found") {
-        Alert.alert(
-          "Kullanıcı bulunamadı",
-          "Bu email için hesap yok. Lütfen kayıt olun veya Google/Apple ile giriş yapın."
-        );
+        Alert.alert(t('common.error'), t('login.errors.userNotFound'));
       } else if (error?.code === "auth/invalid-credential") {
-        Alert.alert("Hatalı bilgi", "E-posta veya şifre hatalı.");
+        Alert.alert(t('common.error'), t('login.errors.wrongPassword'));
       } else {
-        Alert.alert("Hata", error?.message || "Giriş yapılamadı.");
+        Alert.alert(t('common.error'), error?.message || t('login.errors.wrongPassword'));
       }
     } finally {
       setLoading(false);
@@ -111,7 +110,7 @@ export default function LoginScreen() {
         const accessToken = authentication?.accessToken;
 
         if (!idToken && !accessToken) {
-          throw new Error("Google token alınamadı.");
+          throw new Error(t('login.errors.wrongPassword'));
         }
 
         const credential = GoogleAuthProvider.credential(idToken, accessToken);
@@ -121,7 +120,7 @@ export default function LoginScreen() {
         navigation.replace("Main");
       } catch (err) {
         console.error("❌ Google login hata:", err);
-        Alert.alert("Google Girişi Hatası", err?.message || "Giriş başarısız.");
+        Alert.alert(t('common.error'), err?.message || t('login.errors.wrongPassword'));
       } finally {
         setOauthLoading(false);
       }
@@ -133,7 +132,7 @@ export default function LoginScreen() {
   const handleGoogleLogin = async () => {
     if (!GOOGLE_WEB_CLIENT_ID) {
       Alert.alert(
-        "Google Login Yapılandırılmamış",
+        t('common.info'),
         "Google ile giriş yapmak için .env dosyasına EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID eklenmelidir.\n\nŞimdilik Email/Password ile giriş yapabilirsiniz."
       );
       return;
@@ -144,7 +143,7 @@ export default function LoginScreen() {
       await promptAsync();
     } catch (err) {
       console.error("❌ Google hata:", err);
-      Alert.alert("Hata", "Google ile giriş başlatılamadı.");
+      Alert.alert(t('common.error'), t('login.errors.wrongPassword'));
       setOauthLoading(false);
     }
   };
@@ -152,7 +151,7 @@ export default function LoginScreen() {
   // -------- Apple Sign-In --------
   const handleAppleLogin = async () => {
     if (Platform.OS !== "ios") {
-      Alert.alert("Bilgi", "Apple sadece iOS'ta geçerli.");
+      Alert.alert(t('common.info'), "Apple sadece iOS'ta geçerli.");
       return;
     }
 
@@ -178,7 +177,7 @@ export default function LoginScreen() {
       });
 
       const { identityToken } = appleResp || {};
-      if (!identityToken) throw new Error("Apple kimlik belirteci alınamadı.");
+      if (!identityToken) throw new Error(t('login.errors.wrongPassword'));
 
       const provider = new OAuthProvider("apple.com");
       const credential = provider.credential({
@@ -193,7 +192,7 @@ export default function LoginScreen() {
     } catch (err) {
       console.error("❌ Apple login hata:", err);
       if (err?.code === "ERR_CANCELED") return;
-      Alert.alert("Hata", err?.message || "Apple ile giriş yapılamadı.");
+      Alert.alert(t('common.error'), err?.message || t('login.errors.wrongPassword'));
     } finally {
       setOauthLoading(false);
     }
@@ -206,15 +205,13 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View style={styles.content}>
-          <Text style={styles.title}>Login via email</Text>
-          <Text style={styles.subtitle}>
-            The unregistered mailbox will be automatically registered
-          </Text>
+          <Text style={styles.title}>{t('login.title')}</Text>
+          <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
 
           {/* Email */}
           <TextInput
             style={styles.input}
-            placeholder="Please enter email"
+            placeholder={t('login.emailPlaceholder')}
             placeholderTextColor="#666"
             value={email}
             onChangeText={setEmail}
@@ -226,7 +223,7 @@ export default function LoginScreen() {
           {/* Password */}
           <TextInput
             style={styles.input}
-            placeholder="Please enter password"
+            placeholder={t('login.passwordPlaceholder')}
             placeholderTextColor="#666"
             value={password}
             onChangeText={setPassword}
@@ -241,7 +238,7 @@ export default function LoginScreen() {
             onPress={handleLogin}
             disabled={loading || oauthLoading}
           >
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Next</Text>}
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('login.signInButton')}</Text>}
           </TouchableOpacity>
 
           {/* Forgot Password */}
@@ -249,7 +246,7 @@ export default function LoginScreen() {
             onPress={() => navigation.navigate("ForgotPassword")}
             style={{ marginTop: 14 }}
           >
-            <Text style={styles.forgotText}>Forgot your password?</Text>
+            <Text style={styles.forgotText}>{t('login.forgotPassword')}</Text>
           </TouchableOpacity>
 
           {/* 🆕 Kayıt Ol */}
@@ -257,20 +254,17 @@ export default function LoginScreen() {
             onPress={() => navigation.navigate("Register")}
             style={{ marginTop: 6 }}
           >
-            <Text style={styles.signupText}>
-              Don’t have an account?{" "}
-              <Text style={styles.signupLink}>Create one</Text>
-            </Text>
+            <Text style={styles.signupText}>{t('login.createAccount')}</Text>
           </TouchableOpacity>
 
           {/* Social Login */}
           <View style={styles.socialContainer}>
-            <Text style={styles.orText}>Or continue with</Text>
+            <Text style={styles.orText}>{t('login.orSignInWith')}</Text>
 
             <SocialButton
               iconSet="MaterialCommunityIcons"
               iconName="google"
-              label={oauthLoading ? "Signing in..." : "Sign in with Google"}
+              label={oauthLoading ? t('common.loading') : t('login.googleLogin')}
               color="#DB4437"
               onPress={handleGoogleLogin}
             />
@@ -278,7 +272,7 @@ export default function LoginScreen() {
             <SocialButton
               iconSet="FontAwesome"
               iconName="apple"
-              label={oauthLoading ? "Signing in..." : "Sign in with Apple"}
+              label={oauthLoading ? t('common.loading') : t('login.appleLogin')}
               color="#fff"
               onPress={handleAppleLogin}
             />
@@ -287,7 +281,7 @@ export default function LoginScreen() {
           {/* Test info - Only visible in development mode */}
           {__DEV__ && (
             <View style={styles.testInfo}>
-              <Text style={styles.testInfoText}>💡 Test için (sadece dev mode):</Text>
+              <Text style={styles.testInfoText}>{t('login.testCredentials')}</Text>
               <Text style={styles.testInfoText}>Email: test@test.com</Text>
               <Text style={styles.testInfoText}>Şifre: test123</Text>
             </View>

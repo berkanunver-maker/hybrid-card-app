@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { colors } from "../utils/colors";
 import { FirestoreService } from "../services/firestoreService";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
@@ -23,6 +24,7 @@ import ExcelService from "../services/excelService";
 
 export default function HomeScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const [categories, setCategories] = useState([]);
   const [recentCards, setRecentCards] = useState([]);
   const [totalCards, setTotalCards] = useState(0);
@@ -115,7 +117,7 @@ export default function HomeScreen() {
       console.log('🔍 Çekilen kart sayısı:', cards.length);
       
       if (cards.length === 0) {
-        Alert.alert("Uyarı", "Bu klasörde aktarılacak kart bulunmuyor.");
+        Alert.alert(t('common.warning'), t('home.folderMenu.exportExcel'));
         return;
       }
 
@@ -124,15 +126,15 @@ export default function HomeScreen() {
 
       // Excel oluştur ve paylaş
       await ExcelService.exportFolderToExcel(cards, selectedFolder.name);
-      
+
       console.log('✅ Excel oluşturuldu!');
-      Alert.alert("Başarılı! 📊", `${cards.length} kart Excel'e aktarıldı.`);
-      
+      Alert.alert(t('common.success'), t('home.folderMenu.exportExcel'));
+
       setExporting(false);
     } catch (error) {
       console.error("❌ Excel export hatası:", error);
       setExporting(false);
-      Alert.alert("Hata", "Excel dosyası oluşturulamadı. Lütfen tekrar deneyin.");
+      Alert.alert(t('common.error'), t('home.folderMenu.exportExcel'));
     }
   };
 
@@ -158,19 +160,14 @@ export default function HomeScreen() {
       };
 
       await FirestoreService.deleteCategory(selectedFolder.id, options);
-      
-      Alert.alert(
-        "Başarılı", 
-        moveCards 
-          ? `"${selectedFolder.name}" klasörü silindi. Kartlar "Genel" klasörüne taşındı.`
-          : `"${selectedFolder.name}" klasörü ve tüm kartları silindi.`
-      );
-      
+
+      Alert.alert(t('common.success'), t('home.folderMenu.delete'));
+
       setSelectedFolder(null);
       loadCategories();
     } catch (error) {
       console.error("❌ Klasör silinemedi:", error);
-      Alert.alert("Hata", "Klasör silinemedi: " + error.message);
+      Alert.alert(t('common.error'), t('home.folderMenu.delete') + ": " + error.message);
     }
   };
 
@@ -183,18 +180,18 @@ export default function HomeScreen() {
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMins < 1) return "Az önce";
-    if (diffMins < 60) return `${diffMins} dakika önce`;
-    if (diffHours < 24) return `${diffHours} saat önce`;
-    if (diffDays === 1) return "Dün";
-    if (diffDays < 7) return `${diffDays} gün önce`;
-    return cardDate.toLocaleDateString("tr-TR");
+    if (diffMins < 1) return t('home.timeAgo.justNow');
+    if (diffMins < 60) return t('home.timeAgo.minutesAgo', { minutes: diffMins });
+    if (diffHours < 24) return t('home.timeAgo.hoursAgo', { hours: diffHours });
+    if (diffDays === 1) return t('home.timeAgo.yesterday');
+    if (diffDays < 7) return t('home.timeAgo.daysAgo', { days: diffDays });
+    return cardDate.toLocaleDateString();
   };
 
   const renderRecentCard = ({ item }) => {
     const fields = item.fields || item;
-    const name = fields.name || item.name || "İsimsiz";
-    const company = fields.company || item.company || "Şirket bilgisi yok";
+    const name = fields.name || item.name || t('allCards.unknown');
+    const company = fields.company || item.company || t('allCards.unknown');
     
     return (
       <TouchableOpacity
@@ -223,7 +220,7 @@ export default function HomeScreen() {
         <View style={styles.categoryInfo}>
           <Text style={styles.categoryName}>{item.name}</Text>
           <View style={styles.categoryMeta}>
-            <Text style={styles.categoryCount}>{item.cardCount || 0} kart</Text>
+            <Text style={styles.categoryCount}>{t('home.cardStats', { count: item.cardCount || 0, folders: 0 }).split(' • ')[0]}</Text>
             {item.lastCardAddedAt && (
               <>
                 <Text style={styles.categoryDot}> • </Text>
@@ -252,11 +249,11 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.hello}>Hello,</Text>
-          <Text style={styles.subtitle}>{totalCards} kartvizit • {categories.length} klasör</Text>
+          <Text style={styles.hello}>{t('home.hello')}</Text>
+          <Text style={styles.subtitle}>{t('home.cardStats', { count: totalCards, folders: categories.length })}</Text>
         </View>
         <View style={styles.iconsRight}>
-          <TouchableOpacity onPress={() => Alert.alert("Bildirimler", "Yakında!")}>
+          <TouchableOpacity onPress={() => Alert.alert(t('home.notifications'), t('common.comingSoon'))}>
             <Ionicons name="notifications-outline" size={24} color={colors.primary} style={styles.icon} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate("Stats")}>
@@ -266,13 +263,13 @@ export default function HomeScreen() {
       </View>
 
       {/* Search Box - Tıklayınca SearchScreen'e gider */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.searchContainer}
         onPress={() => navigation.navigate('Search')}
         activeOpacity={0.7}
       >
         <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
-        <Text style={styles.searchPlaceholder}>İsim, şirket, hizmet ara...</Text>
+        <Text style={styles.searchPlaceholder}>{t('home.searchPlaceholder')}</Text>
       </TouchableOpacity>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -281,22 +278,22 @@ export default function HomeScreen() {
             <View style={styles.quickAccessIconContainer}>
               <Ionicons name="star" size={24} color="#FFD700" />
             </View>
-            <Text style={styles.quickAccessLabel}>Favoriler</Text>
-            <Text style={styles.quickAccessCount}>{favoriteCount} kart</Text>
+            <Text style={styles.quickAccessLabel}>{t('home.favorites')}</Text>
+            <Text style={styles.quickAccessCount}>{t('home.cards', { count: favoriteCount })}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate("AllCards")}>
             <View style={styles.quickAccessIconContainer}>
               <Ionicons name="albums" size={24} color={colors.primary} />
             </View>
-            <Text style={styles.quickAccessLabel}>Tüm Kartlar</Text>
-            <Text style={styles.quickAccessCount}>{totalCards} kart</Text>
+            <Text style={styles.quickAccessLabel}>{t('home.allCards')}</Text>
+            <Text style={styles.quickAccessCount}>{t('home.cards', { count: totalCards })}</Text>
           </TouchableOpacity>
         </View>
 
         {recentCards.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📌 SON EKLENENLER</Text>
+            <Text style={styles.sectionTitle}>{t('home.recentCards')}</Text>
             <FlatList
               data={recentCards}
               keyExtractor={(item) => item.id}
@@ -310,17 +307,17 @@ export default function HomeScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>📁 KLASÖRLER</Text>
+            <Text style={styles.sectionTitle}>{t('home.folders')}</Text>
             <TouchableOpacity style={styles.newFolderButton} onPress={() => setModalVisible(true)}>
               <Ionicons name="add-circle" size={20} color={colors.primary} />
-              <Text style={styles.newFolderButtonText}>Yeni Klasör</Text>
+              <Text style={styles.newFolderButtonText}>{t('home.newFolder')}</Text>
             </TouchableOpacity>
           </View>
-          
+
           {categories.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>Henüz klasör yok</Text>
-              <Text style={styles.emptyStateSubtext}>"Yeni Klasör" butonuna tıklayarak başlayın</Text>
+              <Text style={styles.emptyStateText}>{t('home.noFolders')}</Text>
+              <Text style={styles.emptyStateSubtext}>{t('home.noFoldersSubtext')}</Text>
             </View>
           ) : (
             categories.map((item) => <View key={item.id}>{renderCategory({ item })}</View>)
@@ -330,7 +327,7 @@ export default function HomeScreen() {
 
       <TouchableOpacity style={styles.scanButton} onPress={() => navigation.navigate("Camera")}>
         <Ionicons name="camera" size={24} color="#fff" />
-        <Text style={styles.scanButtonText}>Yeni Kart Tara</Text>
+        <Text style={styles.scanButtonText}>{t('home.scanNewCard')}</Text>
       </TouchableOpacity>
 
       <CreateFolderModal
@@ -353,18 +350,18 @@ export default function HomeScreen() {
         >
           <View style={styles.menuContainer}>
             {/* Düzenle */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.menuItem}
               onPress={handleEditFolder}
             >
               <Ionicons name="create-outline" size={22} color={colors.primary} />
-              <Text style={styles.menuItemText}>Düzenle</Text>
+              <Text style={styles.menuItemText}>{t('home.folderMenu.edit')}</Text>
             </TouchableOpacity>
-            
+
             <View style={styles.menuDivider} />
-            
+
             {/* Excel'e Aktar (YENİ!) */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.menuItem}
               onPress={handleExportFolder}
               disabled={exporting}
@@ -372,28 +369,28 @@ export default function HomeScreen() {
               {exporting ? (
                 <>
                   <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={styles.menuItemText}>Excel oluşturuluyor...</Text>
+                  <Text style={styles.menuItemText}>{t('common.loading')}</Text>
                 </>
               ) : (
                 <>
                   <Ionicons name="document-text-outline" size={22} color={colors.primary} />
-                  <Text style={styles.menuItemText}>Excel'e Aktar</Text>
+                  <Text style={styles.menuItemText}>{t('home.folderMenu.exportExcel')}</Text>
                   {selectedFolder?.cardCount > 0 && (
                     <Text style={styles.menuItemBadge}>{selectedFolder.cardCount}</Text>
                   )}
                 </>
               )}
             </TouchableOpacity>
-            
+
             <View style={styles.menuDivider} />
-            
+
             {/* Sil */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.menuItem}
               onPress={handleDeleteFolder}
             >
               <Ionicons name="trash-outline" size={22} color="#EF4444" />
-              <Text style={[styles.menuItemText, styles.menuItemDanger]}>Sil</Text>
+              <Text style={[styles.menuItemText, styles.menuItemDanger]}>{t('home.folderMenu.delete')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

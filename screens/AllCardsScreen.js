@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { getAuth } from "firebase/auth";
+import { useTranslation } from "react-i18next";
 import { colors } from "../utils/colors";
 import { FirestoreService } from "../services/firestoreService";
 
@@ -18,6 +19,7 @@ export default function AllCardsScreen() {
   const navigation = useNavigation();
   const auth = getAuth();
   const userId = auth.currentUser?.uid;
+  const { t } = useTranslation();
 
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +51,7 @@ export default function AllCardsScreen() {
 
   const renderCard = ({ item }) => {
     const fields = item.fields || item;
-    const name = fields.name || item.name || "İsimsiz";
+    const name = fields.name || item.name || t('allCards.unknown');
     const company = fields.company || item.company || "";
     const email = fields.email || item.email || "";
     const phone = fields.phone || item.phone || "";
@@ -93,7 +95,7 @@ export default function AllCardsScreen() {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Kartlar yükleniyor...</Text>
+        <Text style={styles.loadingText}>{t('allCards.loading')}</Text>
       </View>
     );
   }
@@ -105,9 +107,9 @@ export default function AllCardsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tüm Kartlar</Text>
+        <Text style={styles.headerTitle}>{t('allCards.title')}</Text>
         <View style={styles.headerRight}>
-          <Text style={styles.cardCount}>{cards.length} kart</Text>
+          <Text style={styles.cardCount}>{t('allCards.cardCount', { count: cards.length })}</Text>
         </View>
       </View>
 
@@ -115,10 +117,8 @@ export default function AllCardsScreen() {
       {cards.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="albums-outline" size={64} color={colors.textSecondary} />
-          <Text style={styles.emptyText}>Henüz kart eklenmemiş</Text>
-          <Text style={styles.emptySubtext}>
-            "Yeni Kart Tara" butonunu kullanarak kart ekleyebilirsiniz
-          </Text>
+          <Text style={styles.emptyText}>{t('allCards.empty')}</Text>
+          <Text style={styles.emptySubtext}>{t('allCards.emptySubtext')}</Text>
         </View>
       ) : (
         <FlatList

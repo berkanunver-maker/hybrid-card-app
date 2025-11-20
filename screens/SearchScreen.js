@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../utils/colors';
 import { SearchService } from '../services/searchService';
 import { FirestoreService } from '../services/firestoreService';
@@ -19,6 +20,7 @@ import SearchBar from '../components/SearchBar';
 import SearchResultCard from '../components/SearchResultCard';
 
 export default function SearchScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -184,9 +186,9 @@ export default function SearchScreen() {
       return (
         <View style={styles.emptyState}>
           <Ionicons name="search-outline" size={64} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>Arama Yap</Text>
+          <Text style={styles.emptyTitle}>{t('screens.search.empty.title')}</Text>
           <Text style={styles.emptySubtitle}>
-            İsim, şirket, hizmet veya diğer bilgilere göre kart arayın
+            {t('screens.search.empty.subtitle')}
           </Text>
         </View>
       );
@@ -196,9 +198,9 @@ export default function SearchScreen() {
       return (
         <View style={styles.emptyState}>
           <Ionicons name="sad-outline" size={64} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>Sonuç Bulunamadı</Text>
+          <Text style={styles.emptyTitle}>{t('screens.search.noResults.title')}</Text>
           <Text style={styles.emptySubtitle}>
-            "{searchQuery}" için sonuç bulunamadı
+            {t('screens.search.noResults.subtitle', { query: searchQuery })}
           </Text>
         </View>
       );
@@ -211,13 +213,13 @@ export default function SearchScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Ara</Text>
+        <Text style={styles.headerTitle}>{t('screens.search.title')}</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -246,13 +248,13 @@ export default function SearchScreen() {
             size={16} 
             color={filters.onlyFavorites ? "#FFD700" : colors.textSecondary} 
           />
-          <Text 
+          <Text
             style={[
               styles.filterText,
               filters.onlyFavorites && styles.filterTextActive,
             ]}
           >
-            Favoriler
+            {t('screens.search.filters.favorites')}
           </Text>
         </TouchableOpacity>
 
@@ -263,18 +265,18 @@ export default function SearchScreen() {
           ]}
           onPress={toggleQAFilter}
         >
-          <Ionicons 
-            name="trophy" 
-            size={16} 
-            color={filters.minQAScore ? colors.success : colors.textSecondary} 
+          <Ionicons
+            name="trophy"
+            size={16}
+            color={filters.minQAScore ? colors.success : colors.textSecondary}
           />
-          <Text 
+          <Text
             style={[
               styles.filterText,
               filters.minQAScore && styles.filterTextActive,
             ]}
           >
-            Kaliteli (QA {'>'}80)
+            {t('screens.search.filters.quality')}
           </Text>
         </TouchableOpacity>
 
@@ -304,7 +306,7 @@ export default function SearchScreen() {
       {searchQuery.trim() && !loading && (
         <View style={styles.resultsHeader}>
           <Text style={styles.resultsCount}>
-            {results.length} sonuç bulundu
+            {t('screens.search.resultsCount', { count: results.length })}
           </Text>
         </View>
       )}
@@ -313,14 +315,14 @@ export default function SearchScreen() {
       {!searchQuery.trim() && searchHistory.length > 0 && (
         <View style={styles.historyContainer}>
           <View style={styles.historyHeader}>
-            <Text style={styles.historyTitle}>Son Aramalar</Text>
-            <TouchableOpacity 
+            <Text style={styles.historyTitle}>{t('screens.search.history.title')}</Text>
+            <TouchableOpacity
               onPress={async () => {
                 await SearchService.clearSearchHistory();
                 setSearchHistory([]);
               }}
             >
-              <Text style={styles.historyClear}>Temizle</Text>
+              <Text style={styles.historyClear}>{t('screens.search.history.clear')}</Text>
             </TouchableOpacity>
           </View>
           {searchHistory.map((item, index) => (
@@ -355,7 +357,7 @@ export default function SearchScreen() {
       {loading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Aranıyor...</Text>
+          <Text style={styles.loadingText}>{t('screens.search.loading')}</Text>
         </View>
       )}
 

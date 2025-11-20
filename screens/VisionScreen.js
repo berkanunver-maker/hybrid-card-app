@@ -8,11 +8,13 @@ import {
   ScrollView,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../utils/theme";
 import { analyzeImage } from "../services/visionService";
 import { Loader, FeedbackModal, CustomButton } from "../components";
 
 export default function VisionScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const [imageUri, setImageUri] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -33,18 +35,18 @@ export default function VisionScreen() {
   // 🧠 Görsel analizi
   const handleAnalyze = async () => {
     if (!imageUri) {
-      alert("Lütfen bir görsel seçin.");
+      alert(t('vision.errors.noImage'));
       return;
     }
 
     try {
       setLoading(true);
       const response = await analyzeImage(imageUri);
-      setAnalysisResult(response || "Sonuç alınamadı.");
+      setAnalysisResult(response || t('vision.errors.noResult'));
       setModalVisible(true);
     } catch (error) {
       console.error("❌ Vision analyze error:", error);
-      setAnalysisResult("Görsel analizinde hata oluştu.");
+      setAnalysisResult(t('vision.errors.analysisFailed'));
       setModalVisible(true);
     } finally {
       setLoading(false);
@@ -58,10 +60,10 @@ export default function VisionScreen() {
     >
       <View style={styles.content}>
         <Text style={[styles.title, { color: colors.text }]}>
-          Vision OCR Analizi
+          {t('vision.title')}
         </Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-          Görsellerden metin tanıma (OCR) işlemi yapabilirsiniz.
+          {t('vision.subtitle')}
         </Text>
 
         {/* Görsel Önizleme */}
@@ -75,12 +77,12 @@ export default function VisionScreen() {
           {imageUri ? (
             <Image source={{ uri: imageUri }} style={styles.imagePreview} />
           ) : (
-            <Text style={{ color: colors.text }}>📷 Görsel Seç</Text>
+            <Text style={{ color: colors.text }}>{t('vision.selectImageButton')}</Text>
           )}
         </TouchableOpacity>
 
         <CustomButton
-          title="Analiz Et"
+          title={t('vision.analyzeButton')}
           onPress={handleAnalyze}
           disabled={!imageUri}
           style={{ marginTop: 20 }}
@@ -88,19 +90,19 @@ export default function VisionScreen() {
       </View>
 
       {/* Loader */}
-      <Loader visible={loading} text="OCR işlemi yapılıyor..." />
+      <Loader visible={loading} text={t('vision.analyzing')} />
 
       {/* Feedback Modal */}
       <FeedbackModal
         visible={modalVisible}
-        title="OCR Sonucu"
+        title={t('vision.resultTitle')}
         message={
           typeof analysisResult === "string"
             ? analysisResult
             : JSON.stringify(analysisResult, null, 2)
         }
         primaryAction={{
-          text: "Kapat",
+          text: t('vision.closeButton'),
           onPress: () => setModalVisible(false),
         }}
         onClose={() => setModalVisible(false)}

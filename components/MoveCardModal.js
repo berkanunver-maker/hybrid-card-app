@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { colors } from "../utils/colors";
 
 export default function MoveCardModal({
@@ -20,6 +21,7 @@ export default function MoveCardModal({
   folders = [],
   cardName = "",
 }) {
+  const { t } = useTranslation();
   const [selectedFolderId, setSelectedFolderId] = useState(currentFolderId);
   const [loading, setLoading] = useState(false);
 
@@ -68,7 +70,7 @@ export default function MoveCardModal({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="folder-open" size={24} color={colors.primary} />
-              <Text style={styles.title}>Klasör Seç</Text>
+              <Text style={styles.title}>{t('components.moveCard.title')}</Text>
             </View>
             <TouchableOpacity onPress={handleClose} disabled={loading}>
               <Ionicons name="close" size={24} color={colors.text} />
@@ -86,7 +88,7 @@ export default function MoveCardModal({
 
           {currentFolder && (
             <View style={styles.currentFolderContainer}>
-              <Text style={styles.label}>Şu anki klasör:</Text>
+              <Text style={styles.label}>{t('components.moveCard.currentFolder')}</Text>
               <View style={styles.currentFolderCard}>
                 <Text style={styles.currentFolderIcon}>{currentFolder.icon}</Text>
                 <Text style={styles.currentFolderName}>{currentFolder.name}</Text>
@@ -96,7 +98,7 @@ export default function MoveCardModal({
 
           <View style={styles.separator}>
             <View style={styles.separatorLine} />
-            <Text style={styles.separatorText}>Taşınacak klasör</Text>
+            <Text style={styles.separatorText}>{t('components.moveCard.moveToFolder')}</Text>
             <View style={styles.separatorLine} />
           </View>
 
@@ -107,7 +109,7 @@ export default function MoveCardModal({
             {availableFolders.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Ionicons name="folder-open-outline" size={48} color={colors.secondaryText} />
-                <Text style={styles.emptyText}>Başka klasör yok</Text>
+                <Text style={styles.emptyText}>{t('components.moveCard.noOtherFolders')}</Text>
               </View>
             ) : (
               availableFolders.map((folder) => (
@@ -131,13 +133,13 @@ export default function MoveCardModal({
                     <View style={styles.folderInfo}>
                       <Text style={styles.folderName}>{folder.name}</Text>
                       <Text style={styles.folderCount}>
-                        {folder.cardCount || 0} kart
+                        {t('components.moveCard.cardCount', { count: folder.cardCount || 0 })}
                       </Text>
                     </View>
                   </View>
                   {folder.isDefault && (
                     <View style={styles.defaultBadge}>
-                      <Text style={styles.defaultBadgeText}>Varsayılan</Text>
+                      <Text style={styles.defaultBadgeText}>{t('components.moveCard.defaultBadge')}</Text>
                     </View>
                   )}
                 </TouchableOpacity>
@@ -151,7 +153,7 @@ export default function MoveCardModal({
               onPress={handleClose}
               disabled={loading}
             >
-              <Text style={styles.cancelButtonText}>İptal</Text>
+              <Text style={styles.cancelButtonText}>{t('components.moveCard.cancelButton')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -169,7 +171,7 @@ export default function MoveCardModal({
               ) : (
                 <>
                   <Ionicons name="arrow-forward" size={18} color="#fff" />
-                  <Text style={styles.moveButtonText}>Taşı</Text>
+                  <Text style={styles.moveButtonText}>{t('components.moveCard.moveButton')}</Text>
                 </>
               )}
             </TouchableOpacity>

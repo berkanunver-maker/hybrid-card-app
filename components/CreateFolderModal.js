@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { colors } from "../utils/colors";
 import { FirestoreService } from "../services/firestoreService";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
@@ -24,6 +25,7 @@ const FOLDER_ICONS = [
 ];
 
 export default function CreateFolderModal({ visible, onClose, onFolderCreated }) {
+  const { t } = useTranslation();
   const [folderName, setFolderName] = useState("");
   const [selectedIcon, setSelectedIcon] = useState("📁");
   const [loading, setLoading] = useState(false);
@@ -45,12 +47,12 @@ export default function CreateFolderModal({ visible, onClose, onFolderCreated })
 
   const handleCreateFolder = async () => {
     if (!folderName.trim()) {
-      Alert.alert("Hata", "Lütfen klasör adı girin.");
+      Alert.alert(t('components.createFolder.validation.errorTitle'), t('components.createFolder.validation.nameRequired'));
       return;
     }
 
     if (!userId) {
-      Alert.alert("Hata", "Kullanıcı girişi gerekli.");
+      Alert.alert(t('components.createFolder.validation.errorTitle'), t('components.createFolder.validation.loginRequired'));
       return;
     }
 
@@ -64,17 +66,17 @@ export default function CreateFolderModal({ visible, onClose, onFolderCreated })
       };
 
       await FirestoreService.addCategory(userId, newCategory);
-      Alert.alert("Başarılı", `"${folderName}" klasörü oluşturuldu!`);
-      
+      Alert.alert(t('components.createFolder.validation.successTitle'), t('components.createFolder.validation.successMessage', { name: folderName }));
+
       setFolderName("");
       setSelectedIcon("📁");
-      
+
       if (onFolderCreated) {
         onFolderCreated();
       }
     } catch (error) {
       console.error("❌ Klasör oluşturulamadı:", error);
-      Alert.alert("Hata", "Klasör oluşturulamadı: " + error.message);
+      Alert.alert(t('components.createFolder.validation.errorTitle'), t('components.createFolder.validation.createError', { error: error.message }));
     } finally {
       setLoading(false);
     }
@@ -91,17 +93,17 @@ export default function CreateFolderModal({ visible, onClose, onFolderCreated })
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           <View style={styles.header}>
-            <Text style={styles.title}>Yeni Klasör Oluştur</Text>
+            <Text style={styles.title}>{t('components.createFolder.title')}</Text>
             <TouchableOpacity onPress={handleClose}>
               <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>Klasör Adı</Text>
+            <Text style={styles.label}>{t('components.createFolder.nameLabel')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Örn: İş Kartları, Arkadaşlar..."
+              placeholder={t('components.createFolder.namePlaceholder')}
               placeholderTextColor={colors.secondaryText}
               value={folderName}
               onChangeText={setFolderName}
@@ -111,7 +113,7 @@ export default function CreateFolderModal({ visible, onClose, onFolderCreated })
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>İkon Seç</Text>
+            <Text style={styles.label}>{t('components.createFolder.iconLabel')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.iconScroll}>
               {FOLDER_ICONS.map((icon, index) => (
                 <TouchableOpacity
@@ -126,22 +128,22 @@ export default function CreateFolderModal({ visible, onClose, onFolderCreated })
           </View>
 
           <View style={styles.preview}>
-            <Text style={styles.previewLabel}>Önizleme:</Text>
+            <Text style={styles.previewLabel}>{t('components.createFolder.previewLabel')}</Text>
             <View style={styles.previewCard}>
               <Text style={styles.previewIcon}>{selectedIcon}</Text>
               <View style={styles.previewInfo}>
-                <Text style={styles.previewName}>{folderName.trim() || "Klasör Adı"}</Text>
-                <Text style={styles.previewCount}>0 kart</Text>
+                <Text style={styles.previewName}>{folderName.trim() || t('components.createFolder.namePlaceholderShort')}</Text>
+                <Text style={styles.previewCount}>{t('components.createFolder.cardCount', { count: 0 })}</Text>
               </View>
             </View>
           </View>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleClose} disabled={loading}>
-              <Text style={styles.cancelButtonText}>İptal</Text>
+              <Text style={styles.cancelButtonText}>{t('components.createFolder.cancelButton')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.button, styles.createButton]} onPress={handleCreateFolder} disabled={loading || !folderName.trim()}>
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.createButtonText}>Oluştur</Text>}
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.createButtonText}>{t('components.createFolder.createButton')}</Text>}
             </TouchableOpacity>
           </View>
         </View>

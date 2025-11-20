@@ -12,16 +12,18 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { colors } from "../utils/colors";
 import { FOLDER_ICONS } from "../utils/constants";
 import { FirestoreService } from "../services/firestoreService";
 
-export default function EditFolderModal({ 
-  visible, 
-  onClose, 
+export default function EditFolderModal({
+  visible,
+  onClose,
   onFolderUpdated,
   folder = null,
 }) {
+  const { t } = useTranslation();
   const [folderName, setFolderName] = useState("");
   const [selectedIcon, setSelectedIcon] = useState("📁");
   const [loading, setLoading] = useState(false);
@@ -35,19 +37,19 @@ export default function EditFolderModal({
 
   const handleUpdateFolder = async () => {
     if (!folderName.trim()) {
-      Alert.alert("Hata", "Lütfen klasör adı girin.");
+      Alert.alert(t('components.editFolder.validation.errorTitle'), t('components.editFolder.validation.nameRequired'));
       return;
     }
 
     if (!folder || !folder.id) {
-      Alert.alert("Hata", "Klasör bilgisi eksik.");
+      Alert.alert(t('components.editFolder.validation.errorTitle'), t('components.editFolder.validation.folderMissing'));
       return;
     }
 
     if (folder.isDefault) {
       Alert.alert(
-        "Uyarı", 
-        "Varsayılan klasörün adı ve ikonu değiştirilemez."
+        t('components.editFolder.validation.warningTitle'),
+        t('components.editFolder.validation.defaultFolderWarning')
       );
       return;
     }
@@ -62,17 +64,17 @@ export default function EditFolderModal({
       };
 
       await FirestoreService.updateCategory(folder.id, updates);
-      
-      Alert.alert("Başarılı", `"${folderName}" klasörü güncellendi!`);
-      
+
+      Alert.alert(t('components.editFolder.validation.successTitle'), t('components.editFolder.validation.successMessage', { name: folderName }));
+
       if (onFolderUpdated) {
         onFolderUpdated();
       }
-      
+
       handleClose();
     } catch (error) {
       console.error("❌ Klasör güncellenemedi:", error);
-      Alert.alert("Hata", "Klasör güncellenemedi: " + error.message);
+      Alert.alert(t('components.editFolder.validation.errorTitle'), t('components.editFolder.validation.updateError', { error: error.message }));
     } finally {
       setLoading(false);
     }
@@ -98,7 +100,7 @@ export default function EditFolderModal({
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           <View style={styles.header}>
-            <Text style={styles.title}>Klasörü Düzenle</Text>
+            <Text style={styles.title}>{t('components.editFolder.title')}</Text>
             <TouchableOpacity onPress={handleClose} disabled={loading}>
               <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
@@ -108,19 +110,19 @@ export default function EditFolderModal({
             <View style={styles.warningBox}>
               <Ionicons name="information-circle" size={20} color="#F59E0B" />
               <Text style={styles.warningText}>
-                Varsayılan klasörün adı ve ikonu değiştirilemez.
+                {t('components.editFolder.defaultFolderWarning')}
               </Text>
             </View>
           )}
 
           <View style={styles.section}>
-            <Text style={styles.label}>Klasör Adı</Text>
+            <Text style={styles.label}>{t('components.editFolder.nameLabel')}</Text>
             <TextInput
               style={[
                 styles.input,
                 isDefaultFolder && styles.inputDisabled,
               ]}
-              placeholder="Örn: İş Kartları, Arkadaşlar..."
+              placeholder={t('components.editFolder.namePlaceholder')}
               placeholderTextColor={colors.secondaryText}
               value={folderName}
               onChangeText={setFolderName}
@@ -131,7 +133,7 @@ export default function EditFolderModal({
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>İkon Seç</Text>
+            <Text style={styles.label}>{t('components.editFolder.iconLabel')}</Text>
             <ScrollView 
               horizontal 
               showsHorizontalScrollIndicator={false} 
@@ -155,36 +157,36 @@ export default function EditFolderModal({
           </View>
 
           <View style={styles.preview}>
-            <Text style={styles.previewLabel}>Önizleme:</Text>
+            <Text style={styles.previewLabel}>{t('components.editFolder.previewLabel')}</Text>
             <View style={styles.previewCard}>
               <Text style={styles.previewIcon}>{selectedIcon}</Text>
               <View style={styles.previewInfo}>
                 <Text style={styles.previewName}>
-                  {folderName.trim() || folder?.name || "Klasör Adı"}
+                  {folderName.trim() || folder?.name || t('components.editFolder.namePlaceholderShort')}
                 </Text>
                 <Text style={styles.previewCount}>
-                  {folder?.cardCount || 0} kart
+                  {t('components.editFolder.cardCount', { count: folder?.cardCount || 0 })}
                 </Text>
               </View>
             </View>
           </View>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={[styles.button, styles.cancelButton]} 
-              onPress={handleClose} 
+            <TouchableOpacity
+              style={[styles.button, styles.cancelButton]}
+              onPress={handleClose}
               disabled={loading}
             >
-              <Text style={styles.cancelButtonText}>İptal</Text>
+              <Text style={styles.cancelButtonText}>{t('components.editFolder.cancelButton')}</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[
-                styles.button, 
+                styles.button,
                 styles.updateButton,
                 (loading || !folderName.trim() || isDefaultFolder) && styles.updateButtonDisabled,
-              ]} 
-              onPress={handleUpdateFolder} 
+              ]}
+              onPress={handleUpdateFolder}
               disabled={loading || !folderName.trim() || isDefaultFolder}
             >
               {loading ? (
@@ -192,7 +194,7 @@ export default function EditFolderModal({
               ) : (
                 <>
                   <Ionicons name="checkmark" size={20} color="#fff" />
-                  <Text style={styles.updateButtonText}>Güncelle</Text>
+                  <Text style={styles.updateButtonText}>{t('components.editFolder.updateButton')}</Text>
                 </>
               )}
             </TouchableOpacity>

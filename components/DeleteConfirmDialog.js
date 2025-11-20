@@ -9,20 +9,27 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { colors } from "../utils/colors";
 
 export default function DeleteConfirmDialog({
   visible,
   onClose,
   onConfirm,
-  title = "Silme Onayı",
-  message = "Bu işlemi geri alamazsınız.",
+  title,
+  message,
   itemName = "",
   itemCount = 0,
   showMoveOption = false,
-  confirmText = "Sil",
-  cancelText = "İptal",
+  confirmText,
+  cancelText,
 }) {
+  const { t } = useTranslation();
+
+  const displayTitle = title || t('components.deleteConfirm.title');
+  const displayMessage = message || t('components.deleteConfirm.message');
+  const displayConfirmText = confirmText || t('components.deleteConfirm.confirmButton');
+  const displayCancelText = cancelText || t('components.deleteConfirm.cancelButton');
   const [loading, setLoading] = useState(false);
   const [selectedOption, setSelectedOption] = useState("delete");
 
@@ -64,27 +71,27 @@ export default function DeleteConfirmDialog({
             <View style={styles.iconContainer}>
               <Ionicons name="warning" size={32} color="#EF4444" />
             </View>
-            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.title}>{displayTitle}</Text>
           </View>
 
           <View style={styles.content}>
             {itemName && (
               <Text style={styles.itemName}>"{itemName}"</Text>
             )}
-            <Text style={styles.message}>{message}</Text>
+            <Text style={styles.message}>{displayMessage}</Text>
             
             {itemCount > 0 && (
               <View style={styles.infoBox}>
                 <Ionicons name="information-circle" size={20} color={colors.primary} />
                 <Text style={styles.infoText}>
-                  Bu klasörde <Text style={styles.infoTextBold}>{itemCount} kart</Text> bulunuyor.
+                  {t('components.deleteConfirm.itemCount', { count: itemCount })}
                 </Text>
               </View>
             )}
 
             {showMoveOption && itemCount > 0 && (
               <View style={styles.optionsContainer}>
-                <Text style={styles.optionsLabel}>Kartlar ne olsun?</Text>
+                <Text style={styles.optionsLabel}>{t('components.deleteConfirm.moveCardsQuestion')}</Text>
                 
                 <TouchableOpacity
                   style={[
@@ -101,10 +108,10 @@ export default function DeleteConfirmDialog({
                   </View>
                   <View style={styles.optionContent}>
                     <Text style={styles.optionTitle}>
-                      Kartları "Genel" klasörüne taşı
+                      {t('components.deleteConfirm.moveOption.title')}
                     </Text>
                     <Text style={styles.optionDescription}>
-                      Kartlar korunur, sadece klasör silinir
+                      {t('components.deleteConfirm.moveOption.description')}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -124,10 +131,10 @@ export default function DeleteConfirmDialog({
                   </View>
                   <View style={styles.optionContent}>
                     <Text style={[styles.optionTitle, styles.dangerText]}>
-                      Kartlarla birlikte sil
+                      {t('components.deleteConfirm.deleteOption.title')}
                     </Text>
                     <Text style={styles.optionDescription}>
-                      Tüm kartlar kalıcı olarak silinir
+                      {t('components.deleteConfirm.deleteOption.description')}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -141,7 +148,7 @@ export default function DeleteConfirmDialog({
               onPress={handleClose}
               disabled={loading}
             >
-              <Text style={styles.cancelButtonText}>{cancelText}</Text>
+              <Text style={styles.cancelButtonText}>{displayCancelText}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -154,7 +161,7 @@ export default function DeleteConfirmDialog({
               ) : (
                 <>
                   <Ionicons name="trash" size={18} color="#fff" />
-                  <Text style={styles.deleteButtonText}>{confirmText}</Text>
+                  <Text style={styles.deleteButtonText}>{displayConfirmText}</Text>
                 </>
               )}
             </TouchableOpacity>

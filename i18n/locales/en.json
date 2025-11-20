@@ -136,6 +136,7 @@
     "title": "Profile",
     "loading": "Loading profile...",
     "editButton": "Edit",
+    "defaultName": "User",
     "settings": "SETTINGS",
     "notifications": "Notification Settings",
     "privacy": "Privacy",

@@ -136,6 +136,7 @@
     "title": "Profil",
     "loading": "Profil yükleniyor...",
     "editButton": "Düzenle",
+    "defaultName": "Kullanıcı",
     "settings": "AYARLAR",
     "notifications": "Bildirim Ayarları",
     "privacy": "Gizlilik",

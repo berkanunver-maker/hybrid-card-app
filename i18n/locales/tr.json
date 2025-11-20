@@ -259,5 +259,415 @@
     "phoneRequired": "Telefon numarası gerekli",
     "phoneInvalid": "Geçersiz telefon numarası formatı",
     "phoneDigits": "Telefon numarası {{min}}-{{max}} rakam içermeli"
+  },
+
+  "components": {
+    "loader": {
+      "defaultMessage": "Yükleniyor..."
+    },
+    "deleteConfirm": {
+      "title": "Silme Onayı",
+      "message": "Bu işlemi geri alamazsınız.",
+      "confirmButton": "Sil",
+      "cancelButton": "İptal",
+      "itemCount": "Bu klasörde {{count}} kart var",
+      "moveCardsQuestion": "Kartlar ne olsun?",
+      "moveOption": {
+        "title": "Kartları \"Genel\" klasörüne taşı",
+        "description": "Kartlar korunur, sadece klasör silinir"
+      },
+      "deleteOption": {
+        "title": "Kartlarla birlikte sil",
+        "description": "Tüm kartlar kalıcı olarak silinir"
+      }
+    },
+    "createFolder": {
+      "title": "Yeni Klasör Oluştur",
+      "folderNameLabel": "Klasör Adı",
+      "folderNamePlaceholder": "Örn: İş Kartları, Arkadaşlar...",
+      "iconSelect": "İkon Seç",
+      "preview": "Önizleme:",
+      "defaultName": "Klasör Adı",
+      "cardCount": "{{count}} kart",
+      "cancelButton": "İptal",
+      "createButton": "Oluştur",
+      "errors": {
+        "nameRequired": "Lütfen klasör adı girin.",
+        "userRequired": "Kullanıcı girişi gerekli.",
+        "createFailed": "Klasör oluşturulamadı:"
+      },
+      "success": "\"{{name}}\" klasörü oluşturuldu!"
+    },
+    "editFolder": {
+      "title": "Klasörü Düzenle",
+      "folderNameLabel": "Klasör Adı",
+      "folderNamePlaceholder": "Örn: İş Kartları, Arkadaşlar...",
+      "iconSelect": "İkon Seç",
+      "preview": "Önizleme:",
+      "defaultName": "Klasör Adı",
+      "cardCount": "{{count}} kart",
+      "cancelButton": "İptal",
+      "updateButton": "Güncelle",
+      "errors": {
+        "nameRequired": "Lütfen klasör adı girin.",
+        "folderMissing": "Klasör bilgisi eksik.",
+        "defaultFolderWarning": "Varsayılan klasörün adı ve ikonu değiştirilemez.",
+        "updateFailed": "Klasör güncellenemedi:"
+      },
+      "success": "\"{{name}}\" klasörü güncellendi!"
+    },
+    "moveCard": {
+      "title": "Klasör Seç",
+      "currentFolder": "Şu anki klasör:",
+      "targetFolder": "Taşınacak klasör",
+      "noOtherFolders": "Başka klasör yok",
+      "cardCount": "{{count}} kart",
+      "defaultBadge": "Varsayılan",
+      "cancelButton": "İptal",
+      "moveButton": "Taşı"
+    },
+    "searchBar": {
+      "placeholder": "İsim, şirket, hizmet ara..."
+    },
+    "searchResult": {
+      "unknownName": "İsimsiz",
+      "unknownCompany": "Şirket bilgisi yok",
+      "qaScore": "QA: {{score}}%"
+    },
+    "exportOptions": {
+      "title": "Dışa Aktarım Seçenekleri",
+      "pdf": "PDF",
+      "share": "Paylaş",
+      "copy": "Kopyala"
+    },
+    "premiumBanner": {
+      "title": "✨ Premium Özellikleri Deneyin!",
+      "description": "Daha hızlı analiz, gelişmiş OCR ve öncelikli destek için yükseltin.",
+      "upgradeButton": "Yükselt"
+    },
+    "feedbackModal": {
+      "defaultTitle": "İşlem Tamamlandı",
+      "closeButton": "Kapat"
+    },
+    "aiChat": {
+      "title": "AI Chat Assistant",
+      "placeholder": "Bu alan gelecekte Document AI sonuçlarıyla etkileşen sohbet asistanını gösterecek."
+    },
+    "cardItem": {
+      "defaultTitle": "Kart Başlığı"
+    },
+    "customButton": {
+      "defaultText": "Buton"
+    },
+    "editableField": {
+      "defaultLabel": "Alan"
+    },
+    "toolCard": {
+      "defaultTitle": "AI Aracı"
+    }
+  },
+
+  "camera": {
+    "title": "Kartvizit Tara",
+    "permissionRequired": "Kamera izni gerekli",
+    "grantPermission": "İzin Ver",
+    "checkingPermission": "Kamera izni kontrol ediliyor...",
+    "retakeButton": "Tekrar Çek",
+    "useButton": "Kullan",
+    "captureButton": "Fotoğraf Çek",
+    "processing": {
+      "capture": "Fotoğraf alınamadı.",
+      "captureSuccess": "Kart görseli yakalandı, analiz başlıyor...",
+      "uploading": "Görsel yükleniyor...",
+      "analyzing": "AI analizi yapılıyor...",
+      "noResult": "Analiz sonucu alınamadı.",
+      "voicePrompt": "Ses Kaydı",
+      "voiceMessage": "Bu kart için ses notu eklemek ister misiniz?",
+      "voiceNo": "Hayır",
+      "voiceYes": "Evet",
+      "voiceStarting": "Ses kaydı başlatılıyor...",
+      "voiceRecording": "Kayıt yapılıyor... 10 saniye içinde duracak",
+      "voiceUploading": "Ses yükleniyor...",
+      "voiceAnalyzing": "Ses analizi yapılıyor...",
+      "voiceFallback": "Ses kaydı yapıldı"
+    },
+    "errors": {
+      "captureError": "Fotoğraf çekilemedi.",
+      "analysisError": "Görsel analizinde hata oluştu.",
+      "voiceError": "Ses kaydı sırasında hata oluştu.",
+      "userNotFound": "Kullanıcı girişi yapılmamış. Lütfen giriş yapın."
+    }
+  },
+
+  "cardDetail": {
+    "title": "Kart Detayı",
+    "preview": "Kart Önizleme",
+    "editMode": "✏️ Düzenleme Modu",
+    "notSavedWarning": "Bu kart henüz kaydedilmedi. Kaydetmek için sağ üstteki 💾 butonuna tıklayın.",
+    "voiceNote": "🎙️ Ses Notu",
+    "playingVoice": "Çalıyor...",
+    "playVoice": "Dinle",
+    "noVoiceNote": "Ses kaydı bulunmuyor.",
+    "scanNewCard": "Yeni Kart Tara",
+    "deleteCard": "Kartı Sil",
+    "addedDate": "📅 Eklenme: {{date}}",
+    "qaScore": "📊 Kalite Skoru: {{score}}/100",
+    "editButton": "Düzenle",
+    "moveButton": "Taşı",
+    "deleteButton": "Sil",
+    "cancelButton": "İptal",
+    "deleteConfirm": {
+      "title": "Kartı Sil?",
+      "message": "Bu işlem geri alınamaz."
+    },
+    "fields": {
+      "company": "Şirket",
+      "name": "İsim",
+      "position": "Pozisyon",
+      "mobile": "Mobil",
+      "phone": "Telefon",
+      "email": "E-posta",
+      "address": "Adres",
+      "website": "Web"
+    },
+    "success": {
+      "saved": "Kart başarıyla kaydedildi.",
+      "updated": "Kart güncellendi!",
+      "deleted": "Kart silindi.",
+      "moved": "Kart \"{{name}}\" klasörüne taşındı.",
+      "favoriteAdded": "Favorilere eklendi",
+      "favoriteRemoved": "Favorilerden kaldırıldı"
+    },
+    "errors": {
+      "notFound": "Kart verisi bulunamadı.",
+      "saveFailed": "Kart kaydedilemedi. Lütfen tekrar deneyin.",
+      "favoriteUpdateFailed": "Favori durumu güncellenemedi.",
+      "missingData": "Kart bilgisi eksik.",
+      "notSaved": "Kart kaydedilmemiş.",
+      "deleteFailed": "Kart silinemedi."
+    },
+    "actions": {
+      "goHome": "Ana Sayfa",
+      "scanNewCard": "Yeni Kart Tara"
+    }
+  },
+
+  "search": {
+    "title": "Ara",
+    "emptyTitle": "Arama Yap",
+    "emptyMessage": "İsim, şirket, hizmet veya diğer bilgilere göre kart arayın",
+    "noResults": "Sonuç Bulunamadı",
+    "noResultsFor": "\"{{query}}\" için sonuç bulunamadı",
+    "resultsCount": "{{count}} sonuç bulundu",
+    "recentSearches": "Son Aramalar",
+    "clearHistory": "Temizle",
+    "searching": "Aranıyor...",
+    "filters": {
+      "favorites": "Favoriler",
+      "highQuality": "Kaliteli (QA >80)"
+    }
+  },
+
+  "folder": {
+    "loading": "Kartlar yükleniyor...",
+    "empty": "Bu klasörde henüz kart yok",
+    "emptyButton": "İlk Kartı Ekle",
+    "cardCount": "{{count}} kart",
+    "menu": {
+      "exporting": "Excel oluşturuluyor...",
+      "exportExcel": "Excel'e Aktar",
+      "cancel": "İptal"
+    },
+    "errors": {
+      "loadFailed": "Kartlar yüklenemedi.",
+      "noCardsToExport": "Bu klasörde aktarılacak kart bulunmuyor.",
+      "exportFailed": "Excel dosyası oluşturulamadı. Lütfen tekrar deneyin."
+    },
+    "success": {
+      "exported": "{{count}} kart Excel'e aktarıldı."
+    },
+    "unknownCard": "İsimsiz",
+    "unknownCompany": "Şirket bilgisi yok"
+  },
+
+  "favorites": {
+    "title": "⭐ Favoriler",
+    "loading": "Favoriler yükleniyor...",
+    "empty": "Henüz favori kartınız yok",
+    "emptySubtext": "Kart detayında yıldız simgesine basarak favori ekleyin",
+    "count": "{{count}} favori kart"
+  },
+
+  "stats": {
+    "title": "İstatistikler",
+    "loading": "İstatistikler yükleniyor...",
+    "sections": {
+      "general": "📊 GENEL",
+      "thisMonth": "📈 BU AY",
+      "distribution": "📁 KATEGORİ DAĞILIMI",
+      "suggestions": "💡 ÖNERİLER"
+    },
+    "cards": {
+      "total": "Toplam Kart",
+      "folders": "Klasör",
+      "favorites": "Favori",
+      "voiceNotes": "Ses Notu",
+      "newThisMonth": "Yeni Kart",
+      "thisWeek": "Bu Hafta",
+      "mostActiveFolder": "En Aktif Klasör:",
+      "cardCount": "{{count}} kart"
+    },
+    "suggestions": {
+      "addVoiceNotes": "💡 Kartlara ses notu ekleyerek daha detaylı bilgi saklayabilirsiniz.",
+      "organizeFolders": "📁 Kartlarınızı klasörlere ayırarak daha düzenli çalışın.",
+      "useFavorites": "⭐ Sık kullandığınız kartları favorilere ekleyin.",
+      "reviewQuality": "📊 Düşük QA skorlu kartları gözden geçirip düzenleyin.",
+      "backupCards": "💾 Kartlarınızı düzenli olarak yedekleyin."
+    },
+    "errors": {
+      "loadFailed": "İstatistikler yüklenemedi:"
+    }
+  },
+
+  "forgotPassword": {
+    "title": "Şifrenizi Sıfırlayın",
+    "subtitle": "E-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.",
+    "emailPlaceholder": "E-posta adresiniz",
+    "sendButton": "Sıfırlama Bağlantısı Gönder",
+    "backToLogin": "← Girişe Dön",
+    "success": {
+      "title": "E-posta gönderildi",
+      "message": "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.",
+      "button": "Tamam"
+    },
+    "errors": {
+      "emailRequired": "Lütfen e-posta adresinizi girin.",
+      "userNotFound": "Bu e-posta adresiyle kayıtlı kullanıcı bulunamadı.",
+      "tooManyRequests": "Çok fazla deneme. Lütfen daha sonra tekrar deneyin.",
+      "invalidEmail": "Geçersiz e-posta adresi.",
+      "networkError": "Ağ hatası. İnternet bağlantınızı kontrol edin.",
+      "genericError": "Bir hata oluştu. Lütfen tekrar deneyin."
+    }
+  },
+
+  "voice": {
+    "title": "Voice AI Analizi",
+    "subtitle": "Konuşmanızı kaydedin, AI onu metne dönüştürsün.",
+    "startRecording": "Kaydı Başlat",
+    "stopRecording": "Kaydı Durdur",
+    "recordingComplete": "Kayıt tamamlandı, analiz edebilirsiniz.",
+    "analyzeButton": "Analiz Et",
+    "analyzing": "Ses analiz ediliyor...",
+    "resultTitle": "Analiz Sonucu",
+    "closeButton": "Kapat",
+    "errors": {
+      "permissionRequired": "Mikrofon izni gerekiyor.",
+      "noRecording": "Önce bir ses kaydı yapın.",
+      "noResult": "Sonuç alınamadı.",
+      "analysisFailed": "Ses analizi başarısız oldu."
+    }
+  },
+
+  "vision": {
+    "title": "Vision OCR Analizi",
+    "subtitle": "Görsellerden metin tanıma (OCR) işlemi yapabilirsiniz.",
+    "selectImageButton": "📷 Görsel Seç",
+    "analyzeButton": "Analiz Et",
+    "analyzing": "OCR işlemi yapılıyor...",
+    "resultTitle": "OCR Sonucu",
+    "closeButton": "Kapat",
+    "errors": {
+      "noImage": "Lütfen bir görsel seçin.",
+      "noResult": "Sonuç alınamadı.",
+      "analysisFailed": "Görsel analizinde hata oluştu."
+    }
+  },
+
+  "document": {
+    "title": "Document AI Analizi",
+    "subtitle": "PDF veya görsel yükleyerek AI destekli analiz yapabilirsiniz.",
+    "selectFileButton": "📄 Dosya Seç",
+    "analyzeButton": "Analiz Et",
+    "analyzing": "Analiz ediliyor...",
+    "resultTitle": "Analiz Sonucu",
+    "closeButton": "Kapat",
+    "errors": {
+      "noFile": "Lütfen önce bir dosya seçin.",
+      "noResult": "Sonuç alınamadı.",
+      "analysisFailed": "Belge analizinde hata oluştu."
+    }
+  },
+
+  "tools": {
+    "title": "AI Tools",
+    "subtitle": "Akıllı kart analizi araçlarını buradan kullanabilirsin.",
+    "qaAnalysis": {
+      "title": "QA Analizi",
+      "description": "PDF veya kart görüntüsünden QA analizi yapar."
+    },
+    "visionOCR": {
+      "title": "Vision OCR",
+      "description": "Görsellerden metin çıkarır (OCR)."
+    },
+    "voiceToText": {
+      "title": "Ses → Metin",
+      "description": "Ses kaydını metne dönüştürür."
+    }
+  },
+
+  "cardHolder": {
+    "title": "📇 Kayıtlı Kartlar",
+    "loading": "Kartlar yükleniyor...",
+    "empty": "Henüz kayıtlı bir kart yok.",
+    "scanButton": "Yeni Kart Tara",
+    "voiceNoteAttached": "Ses notu ekli"
+  },
+
+  "selectCategory": {
+    "title": "Klasör Seç",
+    "createNewFolder": "Yeni Klasör Oluştur",
+    "folderNamePlaceholder": "Klasör Adı",
+    "iconSelectLabel": "İkon Seç:",
+    "cancelButton": "İptal",
+    "createButton": "Oluştur",
+    "saveButton": "Kaydet",
+    "cardCount": "{{count}} kart",
+    "errors": {
+      "loadFailed": "Kategoriler yüklenemedi.",
+      "nameRequired": "Lütfen kategori adı girin.",
+      "folderRequired": "Lütfen bir klasör seçin.",
+      "createFailed": "Kategori oluşturulamadı.",
+      "saveFailed": "Kart kaydedilemedi."
+    },
+    "success": {
+      "created": "Yeni klasör oluşturuldu!"
+    }
+  },
+
+  "fairSelect": {
+    "title": "Select Your Fair",
+    "subtitle": "Please choose the fair or event you are attending.",
+    "backButton": "Back to Home"
+  },
+
+  "qaScreens": {
+    "result": {
+      "placeholder": "Bu ekran test için oluşturuldu. OCR analizi sonuç özeti burada gösterilecek.",
+      "homeButton": "Ana Sayfaya Dön"
+    },
+    "preview": {
+      "placeholder": "Bu ekran test için oluşturuldu. OCR/Document AI sonuç önizlemesi burada olacak.",
+      "detailButton": "Detaylara Git",
+      "homeButton": "Ana Sayfaya Dön"
+    },
+    "detail": {
+      "placeholder": "Bu ekran test için oluşturuldu. OCR verilerinin detaylı görünümü burada olacak.",
+      "resultButton": "Sonuç Ekranına Git",
+      "homeButton": "Ana Sayfaya Dön"
+    }
+  },
+
+  "settings": {
+    "placeholder": "Bu ekran test için oluşturuldu. Hesap, dil, gizlilik ve senkronizasyon ayarları burada olacak."
   }
 }

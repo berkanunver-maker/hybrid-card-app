@@ -39,7 +39,7 @@
     "passwordPlaceholder": "Password",
     "showPassword": "Show",
     "hidePassword": "Hide",
-    "signInButton": "Sign in",
+    "signInButton": "Sign In",
     "orSignInWith": "─── Or sign in with ───",
     "googleLogin": "Sign in with Google",
     "appleLogin": "Sign in with Apple",
@@ -58,15 +58,15 @@
   },
 
   "register": {
-    "title": "Create account",
+    "title": "Create Account",
     "subtitle": "Fill in the information below to quickly register",
     "fullNamePlaceholder": "Full Name",
     "emailPlaceholder": "Email address",
-    "passwordPlaceholder": "Password (min 8, upper/lower case, number)",
-    "signUpButton": "Sign up",
+    "passwordPlaceholder": "Password (min 8, uppercase/lowercase, number)",
+    "signUpButton": "Sign Up",
     "backToLogin": "← Back to Login",
     "errors": {
-      "nameRequired": "Please enter your name",
+      "nameRequired": "Please enter your full name",
       "nameTooShort": "Name must be at least 2 characters",
       "emailRequired": "Please enter email",
       "emailInvalid": "Invalid email",
@@ -96,7 +96,7 @@
 
   "home": {
     "hello": "Hello,",
-    "cardStats": "{{count}} business cards • {{folders}} folders",
+    "cardStats": "{{count}} cards • {{folders}} folders",
     "searchPlaceholder": "Search name, company, service...",
     "favorites": "Favorites",
     "allCards": "All Cards",
@@ -128,7 +128,7 @@
     "cardCount": "{{count}} cards",
     "loading": "Loading cards...",
     "empty": "No cards added yet",
-    "emptySubtext": "Use \"Scan New Card\" button to add cards",
+    "emptySubtext": "Use the \"Scan New Card\" button to add cards",
     "unknown": "Unknown"
   },
 
@@ -171,7 +171,7 @@
   },
 
   "cardDetail": {
-    "title": "Card Details",
+    "title": "Card Detail",
     "newCard": "New Card",
     "edit": "Edit",
     "save": "Save",
@@ -196,8 +196,8 @@
     "missingFields": "Missing Fields",
     "saving": "Saving...",
     "errors": {
-      "saveFailed": "Failed to save card",
-      "deleteFailed": "Failed to delete card",
+      "saveFailed": "Could not save card",
+      "deleteFailed": "Could not delete card",
       "notFound": "Card data not found"
     }
   },
@@ -207,15 +207,15 @@
     "permissionDenied": "Camera permission required",
     "permissionMessage": "Enable camera permission to scan business cards.",
     "openSettings": "Open Settings",
-    "capture": "Capture",
+    "capture": "Take Photo",
     "confirm": "Confirm",
     "retake": "Retake",
     "processing": "Processing...",
     "uploading": "Uploading image...",
-    "analyzing": "AI analyzing...",
+    "analyzing": "AI analysis in progress...",
     "complete": "Complete!",
     "errors": {
-      "captureFailed": "Failed to capture photo",
+      "captureFailed": "Photo capture failed",
       "uploadFailed": "Upload failed",
       "analysisFailed": "Analysis failed"
     }
@@ -237,27 +237,437 @@
   "favorites": {
     "title": "Favorites",
     "empty": "No favorite cards yet",
-    "emptySubtext": "Click the ⭐ icon to add cards to favorites"
+    "emptySubtext": "Tap the ⭐ icon to add cards to favorites"
   },
 
   "validation": {
     "emailInvalid": "Invalid email format",
-    "emailRequired": "Email is required",
-    "emailTooLong": "Email is too long (max 254 characters)",
-    "passwordRequired": "Password is required",
+    "emailRequired": "Email required",
+    "emailTooLong": "Email too long (max 254 characters)",
+    "passwordRequired": "Password required",
     "passwordTooShort": "Password must be at least {{min}} characters",
-    "passwordTooLong": "Password is too long (max {{max}} characters)",
+    "passwordTooLong": "Password too long (max {{max}} characters)",
     "passwordNoUppercase": "Password must contain at least one uppercase letter",
     "passwordNoLowercase": "Password must contain at least one lowercase letter",
     "passwordNoNumber": "Password must contain at least one number",
     "passwordNoSpecialChar": "Password must contain at least one special character",
     "passwordTooCommon": "This password is too common. Please choose a stronger password",
-    "nameRequired": "Name is required",
+    "nameRequired": "Name required",
     "nameTooShort": "Name must be at least {{min}} characters",
-    "nameTooLong": "Name is too long (max {{max}} characters)",
-    "nameInvalidChars": "Name can only contain letters, spaces, hyphens, and apostrophes",
-    "phoneRequired": "Phone number is required",
+    "nameTooLong": "Name too long (max {{max}} characters)",
+    "nameInvalidChars": "Name can only contain letters, spaces, hyphens and apostrophes",
+    "phoneRequired": "Phone number required",
     "phoneInvalid": "Invalid phone number format",
     "phoneDigits": "Phone number must contain {{min}}-{{max}} digits"
+  },
+
+  "components": {
+    "loader": {
+      "defaultMessage": "Loading..."
+    },
+    "deleteConfirm": {
+      "title": "Confirm Deletion",
+      "message": "This action cannot be undone.",
+      "confirmButton": "Delete",
+      "cancelButton": "Cancel",
+      "itemCount": "This folder has {{count}} cards",
+      "moveCardsQuestion": "What should happen to the cards?",
+      "moveOption": {
+        "title": "Move cards to \"General\" folder",
+        "description": "Cards will be kept, only folder will be deleted"
+      },
+      "deleteOption": {
+        "title": "Delete with cards",
+        "description": "All cards will be permanently deleted"
+      }
+    },
+    "createFolder": {
+      "title": "Create New Folder",
+      "folderNameLabel": "Folder Name",
+      "folderNamePlaceholder": "E.g: Business Cards, Friends...",
+      "iconSelect": "Select Icon",
+      "preview": "Preview:",
+      "defaultName": "Folder Name",
+      "cardCount": "{{count}} cards",
+      "cancelButton": "Cancel",
+      "createButton": "Create",
+      "errors": {
+        "nameRequired": "Please enter folder name.",
+        "userRequired": "User login required.",
+        "createFailed": "Could not create folder:"
+      },
+      "success": "\"{{name}}\" folder created!"
+    },
+    "editFolder": {
+      "title": "Edit Folder",
+      "folderNameLabel": "Folder Name",
+      "folderNamePlaceholder": "E.g: Business Cards, Friends...",
+      "iconSelect": "Select Icon",
+      "preview": "Preview:",
+      "defaultName": "Folder Name",
+      "cardCount": "{{count}} cards",
+      "cancelButton": "Cancel",
+      "updateButton": "Update",
+      "errors": {
+        "nameRequired": "Please enter folder name.",
+        "folderMissing": "Folder information missing.",
+        "defaultFolderWarning": "Default folder name and icon cannot be changed.",
+        "updateFailed": "Could not update folder:"
+      },
+      "success": "\"{{name}}\" folder updated!"
+    },
+    "moveCard": {
+      "title": "Select Folder",
+      "currentFolder": "Current folder:",
+      "targetFolder": "Target folder",
+      "noOtherFolders": "No other folders",
+      "cardCount": "{{count}} cards",
+      "defaultBadge": "Default",
+      "cancelButton": "Cancel",
+      "moveButton": "Move"
+    },
+    "searchBar": {
+      "placeholder": "Search name, company, service..."
+    },
+    "searchResult": {
+      "unknownName": "Unknown",
+      "unknownCompany": "No company info",
+      "qaScore": "QA: {{score}}%"
+    },
+    "exportOptions": {
+      "title": "Export Options",
+      "pdf": "PDF",
+      "share": "Share",
+      "copy": "Copy"
+    },
+    "premiumBanner": {
+      "title": "✨ Try Premium Features!",
+      "description": "Upgrade for faster analysis, advanced OCR, and priority support.",
+      "upgradeButton": "Upgrade"
+    },
+    "feedbackModal": {
+      "defaultTitle": "Operation Completed",
+      "closeButton": "Close"
+    },
+    "aiChat": {
+      "title": "AI Chat Assistant",
+      "placeholder": "This area will display a chat assistant that interacts with Document AI results in the future."
+    },
+    "cardItem": {
+      "defaultTitle": "Card Title"
+    },
+    "customButton": {
+      "defaultText": "Button"
+    },
+    "editableField": {
+      "defaultLabel": "Field"
+    },
+    "toolCard": {
+      "defaultTitle": "AI Tool"
+    }
+  },
+
+  "camera": {
+    "title": "Scan Business Card",
+    "permissionRequired": "Camera permission required",
+    "grantPermission": "Grant Permission",
+    "checkingPermission": "Checking camera permission...",
+    "retakeButton": "Retake",
+    "useButton": "Use",
+    "captureButton": "Take Photo",
+    "processing": {
+      "capture": "Could not take photo.",
+      "captureSuccess": "Card image captured, starting analysis...",
+      "uploading": "Uploading image...",
+      "analyzing": "AI analysis in progress...",
+      "noResult": "No analysis result.",
+      "voicePrompt": "Voice Note",
+      "voiceMessage": "Would you like to add a voice note for this card?",
+      "voiceNo": "No",
+      "voiceYes": "Yes",
+      "voiceStarting": "Starting voice recording...",
+      "voiceRecording": "Recording... will stop in 10 seconds",
+      "voiceUploading": "Uploading audio...",
+      "voiceAnalyzing": "Analyzing audio...",
+      "voiceFallback": "Voice recorded"
+    },
+    "errors": {
+      "captureError": "Photo capture failed.",
+      "analysisError": "Image analysis error.",
+      "voiceError": "Voice recording error.",
+      "userNotFound": "User not logged in. Please sign in."
+    }
+  },
+
+  "cardDetail": {
+    "title": "Card Detail",
+    "preview": "Card Preview",
+    "editMode": "✏️ Edit Mode",
+    "notSavedWarning": "This card has not been saved yet. Click the 💾 button at the top right to save.",
+    "voiceNote": "🎙️ Voice Note",
+    "playingVoice": "Playing...",
+    "playVoice": "Play",
+    "noVoiceNote": "No voice recording available.",
+    "scanNewCard": "Scan New Card",
+    "deleteCard": "Delete Card",
+    "addedDate": "📅 Added: {{date}}",
+    "qaScore": "📊 Quality Score: {{score}}/100",
+    "editButton": "Edit",
+    "moveButton": "Move",
+    "deleteButton": "Delete",
+    "cancelButton": "Cancel",
+    "deleteConfirm": {
+      "title": "Delete Card?",
+      "message": "This action cannot be undone."
+    },
+    "fields": {
+      "company": "Company",
+      "name": "Name",
+      "position": "Position",
+      "mobile": "Mobile",
+      "phone": "Phone",
+      "email": "Email",
+      "address": "Address",
+      "website": "Website"
+    },
+    "success": {
+      "saved": "Card saved successfully.",
+      "updated": "Card updated!",
+      "deleted": "Card deleted.",
+      "moved": "Card moved to \"{{name}}\" folder.",
+      "favoriteAdded": "Added to favorites",
+      "favoriteRemoved": "Removed from favorites"
+    },
+    "errors": {
+      "notFound": "Card data not found.",
+      "saveFailed": "Could not save card. Please try again.",
+      "favoriteUpdateFailed": "Could not update favorite status.",
+      "missingData": "Card information missing.",
+      "notSaved": "Card not saved.",
+      "deleteFailed": "Could not delete card."
+    },
+    "actions": {
+      "goHome": "Home",
+      "scanNewCard": "Scan New Card"
+    }
+  },
+
+  "search": {
+    "title": "Search",
+    "emptyTitle": "Search",
+    "emptyMessage": "Search for cards by name, company, service or other information",
+    "noResults": "No Results Found",
+    "noResultsFor": "No results found for \"{{query}}\"",
+    "resultsCount": "{{count}} results found",
+    "recentSearches": "Recent Searches",
+    "clearHistory": "Clear",
+    "searching": "Searching...",
+    "filters": {
+      "favorites": "Favorites",
+      "highQuality": "High Quality (QA >80)"
+    }
+  },
+
+  "folder": {
+    "loading": "Loading cards...",
+    "empty": "No cards in this folder yet",
+    "emptyButton": "Add First Card",
+    "cardCount": "{{count}} cards",
+    "menu": {
+      "exporting": "Creating Excel...",
+      "exportExcel": "Export to Excel",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "loadFailed": "Could not load cards.",
+      "noCardsToExport": "No cards to export in this folder.",
+      "exportFailed": "Could not create Excel file. Please try again."
+    },
+    "success": {
+      "exported": "{{count}} cards exported to Excel."
+    },
+    "unknownCard": "Unknown",
+    "unknownCompany": "No company info"
+  },
+
+  "favorites": {
+    "title": "⭐ Favorites",
+    "loading": "Loading favorites...",
+    "empty": "No favorite cards yet",
+    "emptySubtext": "Tap the star icon in card details to add favorites",
+    "count": "{{count}} favorite cards"
+  },
+
+  "stats": {
+    "title": "Statistics",
+    "loading": "Loading statistics...",
+    "sections": {
+      "general": "📊 GENERAL",
+      "thisMonth": "📈 THIS MONTH",
+      "distribution": "📁 CATEGORY DISTRIBUTION",
+      "suggestions": "💡 SUGGESTIONS"
+    },
+    "cards": {
+      "total": "Total Cards",
+      "folders": "Folders",
+      "favorites": "Favorites",
+      "voiceNotes": "Voice Notes",
+      "newThisMonth": "New Cards",
+      "thisWeek": "This Week",
+      "mostActiveFolder": "Most Active Folder:",
+      "cardCount": "{{count}} cards"
+    },
+    "suggestions": {
+      "addVoiceNotes": "💡 Add voice notes to cards to store more detailed information.",
+      "organizeFolders": "📁 Organize your cards into folders for better management.",
+      "useFavorites": "⭐ Add frequently used cards to favorites.",
+      "reviewQuality": "📊 Review and edit cards with low QA scores.",
+      "backupCards": "💾 Back up your cards regularly."
+    },
+    "errors": {
+      "loadFailed": "Could not load statistics:"
+    }
+  },
+
+  "forgotPassword": {
+    "title": "Reset Your Password",
+    "subtitle": "Enter your email address and we'll send you a password reset link.",
+    "emailPlaceholder": "Your email address",
+    "sendButton": "Send Reset Link",
+    "backToLogin": "← Back to Login",
+    "success": {
+      "title": "Email sent",
+      "message": "Password reset link has been sent to your email address.",
+      "button": "OK"
+    },
+    "errors": {
+      "emailRequired": "Please enter your email address.",
+      "userNotFound": "No user found with this email address.",
+      "tooManyRequests": "Too many attempts. Please try again later.",
+      "invalidEmail": "Invalid email address.",
+      "networkError": "Network error. Check your internet connection.",
+      "genericError": "An error occurred. Please try again."
+    }
+  },
+
+  "voice": {
+    "title": "Voice AI Analysis",
+    "subtitle": "Record your speech, AI will convert it to text.",
+    "startRecording": "Start Recording",
+    "stopRecording": "Stop Recording",
+    "recordingComplete": "Recording complete, you can analyze now.",
+    "analyzeButton": "Analyze",
+    "analyzing": "Analyzing audio...",
+    "resultTitle": "Analysis Result",
+    "closeButton": "Close",
+    "errors": {
+      "permissionRequired": "Microphone permission required.",
+      "noRecording": "Please make a recording first.",
+      "noResult": "No result obtained.",
+      "analysisFailed": "Audio analysis failed."
+    }
+  },
+
+  "vision": {
+    "title": "Vision OCR Analysis",
+    "subtitle": "Perform text recognition (OCR) from images.",
+    "selectImageButton": "📷 Select Image",
+    "analyzeButton": "Analyze",
+    "analyzing": "Performing OCR...",
+    "resultTitle": "OCR Result",
+    "closeButton": "Close",
+    "errors": {
+      "noImage": "Please select an image.",
+      "noResult": "No result obtained.",
+      "analysisFailed": "Image analysis error."
+    }
+  },
+
+  "document": {
+    "title": "Document AI Analysis",
+    "subtitle": "Upload PDF or image for AI-powered analysis.",
+    "selectFileButton": "📄 Select File",
+    "analyzeButton": "Analyze",
+    "analyzing": "Analyzing...",
+    "resultTitle": "Analysis Result",
+    "closeButton": "Close",
+    "errors": {
+      "noFile": "Please select a file first.",
+      "noResult": "No result obtained.",
+      "analysisFailed": "Document analysis error."
+    }
+  },
+
+  "tools": {
+    "title": "AI Tools",
+    "subtitle": "Use smart card analysis tools here.",
+    "qaAnalysis": {
+      "title": "QA Analysis",
+      "description": "Performs QA analysis from PDF or card image."
+    },
+    "visionOCR": {
+      "title": "Vision OCR",
+      "description": "Extracts text from images (OCR)."
+    },
+    "voiceToText": {
+      "title": "Voice → Text",
+      "description": "Converts voice recording to text."
+    }
+  },
+
+  "cardHolder": {
+    "title": "📇 Saved Cards",
+    "loading": "Loading cards...",
+    "empty": "No saved cards yet.",
+    "scanButton": "Scan New Card",
+    "voiceNoteAttached": "Voice note attached"
+  },
+
+  "selectCategory": {
+    "title": "Select Folder",
+    "createNewFolder": "Create New Folder",
+    "folderNamePlaceholder": "Folder Name",
+    "iconSelectLabel": "Select Icon:",
+    "cancelButton": "Cancel",
+    "createButton": "Create",
+    "saveButton": "Save",
+    "cardCount": "{{count}} cards",
+    "errors": {
+      "loadFailed": "Could not load categories.",
+      "nameRequired": "Please enter category name.",
+      "folderRequired": "Please select a folder.",
+      "createFailed": "Could not create category.",
+      "saveFailed": "Could not save card."
+    },
+    "success": {
+      "created": "New folder created!"
+    }
+  },
+
+  "fairSelect": {
+    "title": "Select Your Fair",
+    "subtitle": "Please choose the fair or event you are attending.",
+    "backButton": "Back to Home"
+  },
+
+  "qaScreens": {
+    "result": {
+      "placeholder": "This screen was created for testing. OCR analysis result summary will be displayed here.",
+      "homeButton": "Back to Home"
+    },
+    "preview": {
+      "placeholder": "This screen was created for testing. OCR/Document AI result preview will be here.",
+      "detailButton": "Go to Details",
+      "homeButton": "Back to Home"
+    },
+    "detail": {
+      "placeholder": "This screen was created for testing. Detailed view of OCR data will be here.",
+      "resultButton": "Go to Result Screen",
+      "homeButton": "Back to Home"
+    }
+  },
+
+  "settings": {
+    "placeholder": "This screen was created for testing. Account, language, privacy and sync settings will be here."
   }
 }

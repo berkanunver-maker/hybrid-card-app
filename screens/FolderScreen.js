@@ -13,12 +13,14 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { colors } from "../utils/colors";
 import { FirestoreService } from "../services/firestoreService";
 import ExcelService from "../services/excelService";
 import { getAuth } from "firebase/auth";
 
 export default function FolderScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
   const { category } = route.params; // { id, name, icon, color }
@@ -40,7 +42,7 @@ export default function FolderScreen() {
       setCards(fetchedCards);
     } catch (error) {
       console.error("❌ Kartlar yüklenemedi:", error);
-      Alert.alert("Hata", "Kartlar yüklenemedi.");
+      Alert.alert(t('common.error'), t('screens.folder.errors.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -85,7 +87,7 @@ export default function FolderScreen() {
       setMenuVisible(false);
 
       if (cards.length === 0) {
-        Alert.alert("Uyarı", "Bu klasörde aktarılacak kart bulunmuyor.");
+        Alert.alert(t('common.warning'), t('screens.folder.errors.noCardsToExport'));
         return;
       }
 
@@ -95,8 +97,8 @@ export default function FolderScreen() {
       await ExcelService.exportFolderToExcel(cards, category.name);
 
       Alert.alert(
-        "Başarılı! 📊",
-        `${cards.length} kart Excel'e aktarıldı.`
+        t('common.success'),
+        t('screens.folder.success.exported', { count: cards.length })
       );
 
       setExporting(false);
@@ -104,8 +106,8 @@ export default function FolderScreen() {
       console.error("❌ Excel export hatası:", error);
       setExporting(false);
       Alert.alert(
-        "Hata",
-        "Excel dosyası oluşturulamadı. Lütfen tekrar deneyin."
+        t('common.error'),
+        t('screens.folder.errors.exportFailed')
       );
     }
   };
@@ -117,10 +119,10 @@ export default function FolderScreen() {
         <Text style={styles.cardIcon}>{category.icon}</Text>
         <View style={styles.cardInfo}>
           <Text style={styles.cardName} numberOfLines={1}>
-            {item.fields?.name || item.name || "İsimsiz"}
+            {item.fields?.name || item.name || t('screens.folder.unknownCard')}
           </Text>
           <Text style={styles.cardCompany} numberOfLines={1}>
-            {item.fields?.company || item.company || "Şirket bilgisi yok"}
+            {item.fields?.company || item.company || t('screens.folder.unknownCompany')}
           </Text>
         </View>
       </View>
@@ -152,15 +154,15 @@ export default function FolderScreen() {
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Kartlar yükleniyor...</Text>
+          <Text style={styles.loadingText}>{t('screens.folder.loading')}</Text>
         </View>
       ) : cards.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>🔭</Text>
-          <Text style={styles.emptyText}>Bu klasörde henüz kart yok</Text>
+          <Text style={styles.emptyText}>{t('screens.folder.empty')}</Text>
           <TouchableOpacity style={styles.addButton} onPress={handleAddCard}>
             <Ionicons name="camera" size={20} color="#fff" />
-            <Text style={styles.addButtonText}>İlk Kartı Ekle</Text>
+            <Text style={styles.addButtonText}>{t('screens.folder.emptyButton')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -178,7 +180,7 @@ export default function FolderScreen() {
           }
           ListHeaderComponent={
             <Text style={styles.countText}>
-              {cards.length} kart
+              {t('screens.folder.cardCount', { count: cards.length })}
             </Text>
           }
         />
@@ -213,12 +215,12 @@ export default function FolderScreen() {
               {exporting ? (
                 <>
                   <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={styles.menuItemText}>Excel oluşturuluyor...</Text>
+                  <Text style={styles.menuItemText}>{t('screens.folder.menu.exporting')}</Text>
                 </>
               ) : (
                 <>
                   <Ionicons name="document-text-outline" size={22} color={colors.primary} />
-                  <Text style={styles.menuItemText}>Excel'e Aktar</Text>
+                  <Text style={styles.menuItemText}>{t('screens.folder.menu.exportExcel')}</Text>
                   {cards.length > 0 && (
                     <Text style={styles.menuItemBadge}>{cards.length}</Text>
                   )}
@@ -235,7 +237,7 @@ export default function FolderScreen() {
             >
               <Ionicons name="close-outline" size={22} color={colors.textSecondary} />
               <Text style={[styles.menuItemText, { color: colors.textSecondary }]}>
-                İptal
+                {t('screens.folder.menu.cancel')}
               </Text>
             </TouchableOpacity>
           </View>

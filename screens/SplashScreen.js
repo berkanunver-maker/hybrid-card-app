@@ -2,10 +2,12 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { useTranslation } from "react-i18next";
 
 export default function SplashScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
-  const [status, setStatus] = useState("Yükleniyor...");
+  const [status, setStatus] = useState(t('splash.subtitle'));
 
   useEffect(() => {
     checkAuthStatus();
@@ -18,13 +20,13 @@ export default function SplashScreen() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         // User is signed in
-        setStatus("Giriş mevcut! Yönlendiriliyor...");
+        setStatus(t('splash.authChecking'));
         setTimeout(() => {
           navigation.replace("Main");
         }, 500);
       } else {
         // No user is signed in
-        setStatus("Giriş gerekli...");
+        setStatus(t('splash.loginRequired'));
         setTimeout(() => {
           navigation.replace("Login");
         }, 800);
@@ -37,7 +39,7 @@ export default function SplashScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Hybrid Card App</Text>
+      <Text style={styles.title}>{t('splash.title')}</Text>
       <ActivityIndicator color="#7B61FF" size="large" style={styles.loader} />
       <Text style={styles.subtitle}>{status}</Text>
     </View>

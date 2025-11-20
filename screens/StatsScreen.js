@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { colors } from "../utils/colors";
 import { FirestoreService } from "../services/firestoreService";
 import { getAuth } from "firebase/auth";
@@ -18,6 +19,7 @@ import { getAuth } from "firebase/auth";
 const { width } = Dimensions.get("window");
 
 export default function StatsScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -119,7 +121,7 @@ export default function StatsScreen() {
             <Text style={styles.categoryBarIcon}>{category.icon}</Text>
             <Text style={styles.categoryBarName}>{category.name}</Text>
           </View>
-          <Text style={styles.categoryBarCount}>{category.count} kart</Text>
+          <Text style={styles.categoryBarCount}>{t('screens.stats.cards.cardCount', { count: category.count })}</Text>
         </View>
         <View style={styles.categoryBarTrack}>
           <View 
@@ -137,7 +139,7 @@ export default function StatsScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>İstatistikler yükleniyor...</Text>
+        <Text style={styles.loadingText}>{t('screens.stats.loading')}</Text>
       </View>
     );
   }
@@ -149,7 +151,7 @@ export default function StatsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>İstatistikler</Text>
+        <Text style={styles.headerTitle}>{t('screens.stats.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -159,29 +161,29 @@ export default function StatsScreen() {
       >
         {/* Genel İstatistikler */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📊 GENEL</Text>
+          <Text style={styles.sectionTitle}>{t('screens.stats.sections.general')}</Text>
           <View style={styles.statsGrid}>
-            <StatCard 
-              icon="albums" 
-              label="Toplam Kart" 
+            <StatCard
+              icon="albums"
+              label={t('screens.stats.cards.total')}
               value={stats.totalCards}
               color={colors.primary}
             />
-            <StatCard 
-              icon="folder" 
-              label="Klasör" 
+            <StatCard
+              icon="folder"
+              label={t('screens.stats.cards.folders')}
               value={stats.totalCategories}
               color="#FF9500"
             />
-            <StatCard 
-              icon="star" 
-              label="Favori" 
+            <StatCard
+              icon="star"
+              label={t('screens.stats.cards.favorites')}
               value={stats.favoriteCards}
               color="#FFD700"
             />
-            <StatCard 
-              icon="mic" 
-              label="Ses Notu" 
+            <StatCard
+              icon="mic"
+              label={t('screens.stats.cards.voiceNotes')}
               value={stats.cardsWithVoiceNotes}
               color="#34C759"
             />
@@ -190,23 +192,23 @@ export default function StatsScreen() {
 
         {/* Bu Ay */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📈 BU AY</Text>
+          <Text style={styles.sectionTitle}>{t('screens.stats.sections.thisMonth')}</Text>
           <View style={styles.monthCard}>
             <View style={styles.monthRow}>
               <View style={styles.monthItem}>
                 <Text style={styles.monthValue}>{stats.cardsThisMonth}</Text>
-                <Text style={styles.monthLabel}>Yeni Kart</Text>
+                <Text style={styles.monthLabel}>{t('screens.stats.cards.newThisMonth')}</Text>
               </View>
               <View style={styles.monthDivider} />
               <View style={styles.monthItem}>
                 <Text style={styles.monthValue}>{stats.cardsThisWeek}</Text>
-                <Text style={styles.monthLabel}>Bu Hafta</Text>
+                <Text style={styles.monthLabel}>{t('screens.stats.cards.thisWeek')}</Text>
               </View>
             </View>
 
             {stats.mostActiveCategory && (
               <View style={styles.mostActiveContainer}>
-                <Text style={styles.mostActiveLabel}>En Aktif Klasör:</Text>
+                <Text style={styles.mostActiveLabel}>{t('screens.stats.cards.mostActiveFolder')}</Text>
                 <View style={styles.mostActiveCategory}>
                   <Text style={styles.mostActiveCategoryIcon}>
                     {stats.mostActiveCategory.icon}
@@ -215,7 +217,7 @@ export default function StatsScreen() {
                     {stats.mostActiveCategory.name}
                   </Text>
                   <Text style={styles.mostActiveCategoryCount}>
-                    ({stats.mostActiveCategory.count} kart)
+                    ({t('screens.stats.cards.cardCount', { count: stats.mostActiveCategory.count })})
                   </Text>
                 </View>
               </View>
@@ -226,7 +228,7 @@ export default function StatsScreen() {
         {/* Kategori Dağılımı */}
         {stats.categoryDistribution && stats.categoryDistribution.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📁 KATEGORİ DAĞILIMI</Text>
+            <Text style={styles.sectionTitle}>{t('screens.stats.sections.distribution')}</Text>
             <View style={styles.categoryDistribution}>
               {stats.categoryDistribution.map((category, index) => (
                 <CategoryBar 
@@ -241,18 +243,18 @@ export default function StatsScreen() {
 
         {/* Öneriler */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>💡 ÖNERİLER</Text>
+          <Text style={styles.sectionTitle}>{t('screens.stats.sections.suggestions')}</Text>
           <View style={styles.suggestionCard}>
             <Ionicons name="bulb-outline" size={24} color="#FF9500" />
             <View style={styles.suggestionContent}>
               <Text style={styles.suggestionText}>
                 {stats.favoriteCards === 0
-                  ? "Henüz favori kartınız yok. Önemli kartları favorilere ekleyin!"
+                  ? t('screens.stats.suggestions.useFavorites')
                   : stats.cardsWithVoiceNotes === 0
-                  ? "Kartlarınıza ses notu ekleyerek daha fazla bilgi saklayın!"
-                  : stats.cardsThisMonth === 0
-                  ? "Bu ay henüz kart eklemediniz. Yeni kartlar taramaya başlayın!"
-                  : "Harika gidiyorsunuz! Kartlarınızı düzenli tutmaya devam edin."}
+                  ? t('screens.stats.suggestions.addVoiceNotes')
+                  : stats.totalCategories <= 1
+                  ? t('screens.stats.suggestions.organizeFolders')
+                  : t('screens.stats.suggestions.backupCards')}
               </Text>
             </View>
           </View>

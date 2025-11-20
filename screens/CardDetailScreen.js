@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { colors } from "../utils/colors";
 import { voiceService } from "../services/voiceService";
 import { FirestoreService } from "../services/firestoreService";
@@ -20,10 +21,11 @@ import DeleteConfirmDialog from "../components/DeleteConfirmDialog";
 import { getAuth } from "firebase/auth";
 
 export default function CardDetailScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
   const { cardData: initialCardData, isNewCard } = route.params || {};
-  
+
   const [cardData, setCardData] = useState(initialCardData);
   const [playing, setPlaying] = useState(false);
   const [isFavorite, setIsFavorite] = useState(initialCardData?.isFavorite || false);
@@ -59,10 +61,10 @@ export default function CardDetailScreen() {
   if (!cardData) {
     return (
       <View style={styles.center}>
-        <Text style={styles.text}>Kart verisi bulunamadı.</Text>
+        <Text style={styles.text}>{t('cardDetail.errors.notFound')}</Text>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={[styles.text, { color: colors.primary, marginTop: 10 }]}>
-            Geri Dön
+            {t('common.back')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -101,15 +103,15 @@ export default function CardDetailScreen() {
       setCardData(fullCard);
 
       Alert.alert(
-        "Başarılı! 🎉",
-        "Kart başarıyla kaydedildi.",
+        t('cardDetail.success.saveTitle'),
+        t('cardDetail.success.saved'),
         [
           {
-            text: "Ana Sayfa",
+            text: t('cardDetail.actions.goHome'),
             onPress: () => navigation.navigate("Main"),
           },
           {
-            text: "Yeni Kart Tara",
+            text: t('cardDetail.actions.scanNewCard'),
             onPress: () => navigation.navigate("Camera"),
           },
         ]
@@ -123,7 +125,7 @@ export default function CardDetailScreen() {
     } catch (error) {
       console.error("❌ Kart kaydedilemedi:", error);
       setSaving(false);
-      Alert.alert("Hata", "Kart kaydedilemedi. Lütfen tekrar deneyin.");
+      Alert.alert(t('common.error'), t('cardDetail.errors.saveFailed'));
     }
   };
 
@@ -131,7 +133,7 @@ export default function CardDetailScreen() {
   const playVoiceNote = async () => {
     try {
       if (!voiceService?.playAudio) {
-        throw new Error("voiceService.playAudio fonksiyonu bulunamadı!");
+        throw new Error(t('cardDetail.errors.voiceServiceNotFound'));
       }
       setPlaying(true);
       await voiceService.playAudio(voiceNote?.audioUrl);
@@ -159,7 +161,7 @@ export default function CardDetailScreen() {
       console.error("❌ Favori güncellenemedi:", error);
       // Hata durumunda geri al
       setIsFavorite(!isFavorite);
-      Alert.alert("Hata", "Favori durumu güncellenemedi.");
+      Alert.alert(t('common.error'), t('cardDetail.errors.favoriteUpdateFailed'));
     }
   };
 
@@ -172,7 +174,7 @@ export default function CardDetailScreen() {
   const handleMoveCard = async (newCategoryId) => {
     try {
       if (!cardData.id || !cardData.categoryId) {
-        Alert.alert("Hata", "Kart bilgisi eksik.");
+        Alert.alert(t('common.error'), t('cardDetail.errors.missingData'));
         return;
       }
 
@@ -184,17 +186,17 @@ export default function CardDetailScreen() {
 
       // Yeni kategori bilgisini al
       const newCategory = categories.find(cat => cat.id === newCategoryId);
-      
+
       setCardData({
         ...cardData,
         categoryId: newCategoryId,
         categoryName: newCategory?.name
       });
 
-      Alert.alert("Başarılı", `Kart "${newCategory?.name}" klasörüne taşındı.`);
+      Alert.alert(t('common.success'), t('cardDetail.success.moved', { name: newCategory?.name }));
     } catch (error) {
       console.error("❌ Kart taşınamadı:", error);
-      Alert.alert("Hata", "Kart taşınamadı: " + error.message);
+      Alert.alert(t('common.error'), t('cardDetail.errors.moveFailed') + ' ' + error.message);
     }
   };
 
@@ -224,7 +226,7 @@ export default function CardDetailScreen() {
   const handleSaveEdits = async () => {
     try {
       if (!cardData.id) {
-        Alert.alert("Hata", "Kart kaydedilmemiş.");
+        Alert.alert(t('common.error'), t('cardDetail.errors.notSaved'));
         return;
       }
 
@@ -246,11 +248,11 @@ export default function CardDetailScreen() {
 
       setIsEditing(false);
       setSaving(false);
-      Alert.alert("Başarılı", "Kart güncellendi!");
+      Alert.alert(t('common.success'), t('cardDetail.success.updated'));
     } catch (error) {
       console.error("❌ Kart güncellenemedi:", error);
       setSaving(false);
-      Alert.alert("Hata", "Kart güncellenemedi: " + error.message);
+      Alert.alert(t('common.error'), t('cardDetail.errors.updateFailed') + ' ' + error.message);
     }
   };
 
@@ -271,12 +273,12 @@ export default function CardDetailScreen() {
       if (cardData.id) {
         await FirestoreService.deleteCard(cardData.id);
         console.log("✅ Kart silindi:", cardData.id);
-        Alert.alert("Başarılı", "Kart silindi.");
+        Alert.alert(t('common.success'), t('cardDetail.success.deleted'));
         navigation.goBack();
       }
     } catch (error) {
       console.error("❌ Kart silinemedi:", error);
-      Alert.alert("Hata", "Kart silinemedi.");
+      Alert.alert(t('common.error'), t('cardDetail.errors.deleteFailed'));
     }
   };
 
@@ -298,14 +300,14 @@ export default function CardDetailScreen() {
 
   // 🔹 Sabit alan listesi — boşlar "—"
   const infoItems = [
-    { icon: "🏢", label: "Şirket", value: fields.company || "—", fieldKey: "company" },
-    { icon: "👤", label: "İsim", value: fields.name || "—", fieldKey: "name" },
-    { icon: "💼", label: "Pozisyon", value: fields.title || "—", fieldKey: "title" },
-    { icon: "📞", label: "Mobil", value: fields.mobile || "—", fieldKey: "mobile" },
-    { icon: "☎️", label: "Telefon", value: fields.phone || "—", fieldKey: "phone" },
-    { icon: "📧", label: "E-posta", value: fields.email || "—", fieldKey: "email" },
-    { icon: "📍", label: "Adres", value: fields.address || "—", fieldKey: "address" },
-    { icon: "🌐", label: "Web", value: fields.website || "—", fieldKey: "website" },
+    { icon: "🏢", label: t('cardDetail.fields.company'), value: fields.company || "—", fieldKey: "company" },
+    { icon: "👤", label: t('cardDetail.fields.name'), value: fields.name || "—", fieldKey: "name" },
+    { icon: "💼", label: t('cardDetail.fields.position'), value: fields.title || "—", fieldKey: "title" },
+    { icon: "📞", label: t('cardDetail.fields.mobile'), value: fields.mobile || "—", fieldKey: "mobile" },
+    { icon: "☎️", label: t('cardDetail.fields.phone'), value: fields.phone || "—", fieldKey: "phone" },
+    { icon: "📧", label: t('cardDetail.fields.email'), value: fields.email || "—", fieldKey: "email" },
+    { icon: "📍", label: t('cardDetail.fields.address'), value: fields.address || "—", fieldKey: "address" },
+    { icon: "🌐", label: t('cardDetail.fields.website'), value: fields.website || "—", fieldKey: "website" },
   ];
 
   return (
@@ -320,7 +322,7 @@ export default function CardDetailScreen() {
         </TouchableOpacity>
         
         <Text style={styles.headerTitle} numberOfLines={1}>
-          {isNewCard ? "Kart Önizleme" : "Kart Detayı"}
+          {isNewCard ? t('cardDetail.preview') : t('cardDetail.title')}
         </Text>
         
         <View style={styles.headerRight}>
@@ -384,9 +386,9 @@ export default function CardDetailScreen() {
       {/* İPTAL BUTONU (Düzenleme modunda) */}
       {isEditing && (
         <View style={styles.editBanner}>
-          <Text style={styles.editBannerText}>✏️ Düzenleme Modu</Text>
+          <Text style={styles.editBannerText}>{t('cardDetail.editMode')}</Text>
           <TouchableOpacity onPress={handleCancelEdit}>
-            <Text style={styles.editBannerCancel}>İptal</Text>
+            <Text style={styles.editBannerCancel}>{t('cardDetail.cancelButton')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -401,7 +403,7 @@ export default function CardDetailScreen() {
           <View style={styles.warningBanner}>
             <Ionicons name="information-circle" size={24} color="#FF9500" />
             <Text style={styles.warningText}>
-              Bu kart henüz kaydedilmedi. Kaydetmek için sağ üstteki 💾 butonuna tıklayın.
+              {t('cardDetail.notSavedWarning')}
             </Text>
           </View>
         )}
@@ -451,7 +453,7 @@ export default function CardDetailScreen() {
 
         {/* 🔹 Ses Notu Alanı */}
         <View style={styles.voiceBox}>
-          <Text style={styles.voiceTitle}>🎙️ Ses Notu</Text>
+          <Text style={styles.voiceTitle}>{t('cardDetail.voiceNote')}</Text>
 
           {voiceNote ? (
             <>
@@ -466,7 +468,7 @@ export default function CardDetailScreen() {
                   color={colors.primary}
                 />
                 <Text style={styles.playText}>
-                  {playing ? "Çalıyor..." : "Dinle"}
+                  {playing ? t('cardDetail.playingVoice') : t('cardDetail.playVoice')}
                 </Text>
               </TouchableOpacity>
 
@@ -477,7 +479,7 @@ export default function CardDetailScreen() {
               )}
             </>
           ) : (
-            <Text style={styles.noVoice}>Ses kaydı bulunmuyor.</Text>
+            <Text style={styles.noVoice}>{t('cardDetail.noVoiceNote')}</Text>
           )}
         </View>
 
@@ -489,7 +491,7 @@ export default function CardDetailScreen() {
             onPress={() => navigation.navigate("Camera")}
           >
             <Ionicons name="camera" size={22} color={colors.background} />
-            <Text style={styles.newCardText}>Yeni Kart Tara</Text>
+            <Text style={styles.newCardText}>{t('cardDetail.scanNewCard')}</Text>
           </TouchableOpacity>
 
           {/* Kartı Sil (Sadece kaydedilmiş kartlar için) */}
@@ -499,7 +501,7 @@ export default function CardDetailScreen() {
               onPress={handleDeleteCard}
             >
               <Ionicons name="trash-outline" size={22} color="#FF3B30" />
-              <Text style={styles.deleteText}>Kartı Sil</Text>
+              <Text style={styles.deleteText}>{t('cardDetail.deleteCard')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -508,11 +510,11 @@ export default function CardDetailScreen() {
         {cardData.createdAt && (
           <View style={styles.metaBox}>
             <Text style={styles.metaText}>
-              📅 Eklenme: {new Date(cardData.createdAt).toLocaleDateString("tr-TR")}
+              {t('cardDetail.addedDate', { date: new Date(cardData.createdAt).toLocaleDateString("tr-TR") })}
             </Text>
             {cardData.qaScore !== undefined && (
               <Text style={styles.metaText}>
-                📊 Kalite Skoru: {cardData.qaScore}/100
+                {t('cardDetail.qaScore', { score: cardData.qaScore })}
               </Text>
             )}
           </View>
@@ -532,32 +534,32 @@ export default function CardDetailScreen() {
           onPress={() => setMenuVisible(false)}
         >
           <View style={styles.menuContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.menuItem}
               onPress={handleMenuEdit}
             >
               <Ionicons name="create-outline" size={22} color={colors.primary} />
-              <Text style={styles.menuItemText}>Düzenle</Text>
+              <Text style={styles.menuItemText}>{t('cardDetail.editButton')}</Text>
             </TouchableOpacity>
-            
+
             <View style={styles.menuDivider} />
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.menuItem}
               onPress={handleMenuMove}
             >
               <Ionicons name="folder-outline" size={22} color={colors.primary} />
-              <Text style={styles.menuItemText}>Taşı</Text>
+              <Text style={styles.menuItemText}>{t('cardDetail.moveButton')}</Text>
             </TouchableOpacity>
-            
+
             <View style={styles.menuDivider} />
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.menuItem}
               onPress={handleMenuDelete}
             >
               <Ionicons name="trash-outline" size={22} color="#EF4444" />
-              <Text style={[styles.menuItemText, styles.menuItemDanger]}>Sil</Text>
+              <Text style={[styles.menuItemText, styles.menuItemDanger]}>{t('cardDetail.deleteButton')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -581,8 +583,8 @@ export default function CardDetailScreen() {
         visible={deleteDialogVisible}
         onClose={() => setDeleteDialogVisible(false)}
         onConfirm={handleConfirmDelete}
-        title="Kartı Sil?"
-        message="Bu işlem geri alınamaz."
+        title={t('cardDetail.deleteConfirm.title')}
+        message={t('cardDetail.deleteConfirm.message')}
         itemName={fields.name}
         showMoveOption={false}
       />

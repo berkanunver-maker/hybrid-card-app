@@ -431,6 +431,7 @@
       "website": "Web"
     },
     "success": {
+      "saveTitle": "Başarılı! 🎉",
       "saved": "Kart başarıyla kaydedildi.",
       "updated": "Kart güncellendi!",
       "deleted": "Kart silindi.",
@@ -444,7 +445,10 @@
       "favoriteUpdateFailed": "Favori durumu güncellenemedi.",
       "missingData": "Kart bilgisi eksik.",
       "notSaved": "Kart kaydedilmemiş.",
-      "deleteFailed": "Kart silinemedi."
+      "deleteFailed": "Kart silinemedi.",
+      "moveFailed": "Kart taşınamadı:",
+      "updateFailed": "Kart güncellenemedi:",
+      "voiceServiceNotFound": "voiceService.playAudio fonksiyonu bulunamadı!"
     },
     "actions": {
       "goHome": "Ana Sayfa",

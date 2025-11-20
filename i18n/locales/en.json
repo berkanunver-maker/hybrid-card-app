@@ -431,6 +431,7 @@
       "website": "Website"
     },
     "success": {
+      "saveTitle": "Success! 🎉",
       "saved": "Card saved successfully.",
       "updated": "Card updated!",
       "deleted": "Card deleted.",
@@ -444,7 +445,10 @@
       "favoriteUpdateFailed": "Could not update favorite status.",
       "missingData": "Card information missing.",
       "notSaved": "Card not saved.",
-      "deleteFailed": "Could not delete card."
+      "deleteFailed": "Could not delete card.",
+      "moveFailed": "Could not move card:",
+      "updateFailed": "Could not update card:",
+      "voiceServiceNotFound": "voiceService.playAudio function not found!"
     },
     "actions": {
       "goHome": "Home",

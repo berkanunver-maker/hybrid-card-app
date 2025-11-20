@@ -13,15 +13,17 @@ import {
 } from "react-native";
 import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 
 export default function ForgotPasswordScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleResetPassword = async () => {
     if (!email.trim()) {
-      Alert.alert("Uyarı", "Lütfen e-posta adresinizi girin.");
+      Alert.alert(t('common.warning'), t('forgotPassword.errors.emailRequired'));
       return;
     }
 
@@ -30,18 +32,22 @@ export default function ForgotPasswordScreen() {
       const auth = getAuth();
       await sendPasswordResetEmail(auth, email.trim());
       Alert.alert(
-        "E-posta gönderildi",
-        "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.",
-        [{ text: "Tamam", onPress: () => navigation.goBack() }]
+        t('forgotPassword.success.title'),
+        t('forgotPassword.success.message'),
+        [{ text: t('forgotPassword.success.button'), onPress: () => navigation.goBack() }]
       );
     } catch (error) {
       console.error("❌ Şifre sıfırlama hatası:", error);
       if (error.code === "auth/user-not-found") {
-        Alert.alert("Hata", "Bu e-posta ile kayıtlı kullanıcı bulunamadı.");
+        Alert.alert(t('common.error'), t('forgotPassword.errors.userNotFound'));
       } else if (error.code === "auth/invalid-email") {
-        Alert.alert("Hata", "Geçersiz e-posta adresi.");
+        Alert.alert(t('common.error'), t('forgotPassword.errors.invalidEmail'));
+      } else if (error.code === "auth/too-many-requests") {
+        Alert.alert(t('common.error'), t('forgotPassword.errors.tooManyRequests'));
+      } else if (error.code === "auth/network-request-failed") {
+        Alert.alert(t('common.error'), t('forgotPassword.errors.networkError'));
       } else {
-        Alert.alert("Hata", "İşlem başarısız. Lütfen tekrar deneyin.");
+        Alert.alert(t('common.error'), t('forgotPassword.errors.genericError'));
       }
     } finally {
       setLoading(false);
@@ -54,15 +60,14 @@ export default function ForgotPasswordScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.content}>
-        <Text style={styles.title}>Reset your password</Text>
+        <Text style={styles.title}>{t('forgotPassword.title')}</Text>
         <Text style={styles.subtitle}>
-          Please enter your registered e-mail address. We'll send you a password
-          reset link.
+          {t('forgotPassword.subtitle')}
         </Text>
 
         <TextInput
           style={styles.input}
-          placeholder="E-posta adresiniz"
+          placeholder={t('forgotPassword.emailPlaceholder')}
           placeholderTextColor="#666"
           value={email}
           onChangeText={setEmail}
@@ -79,7 +84,7 @@ export default function ForgotPasswordScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Send reset link</Text>
+            <Text style={styles.buttonText}>{t('forgotPassword.sendButton')}</Text>
           )}
         </TouchableOpacity>
 
@@ -87,7 +92,7 @@ export default function ForgotPasswordScreen() {
           onPress={() => navigation.goBack()}
           style={{ marginTop: 20 }}
         >
-          <Text style={styles.backText}>← Back to Login</Text>
+          <Text style={styles.backText}>{t('forgotPassword.backToLogin')}</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

@@ -7,11 +7,13 @@ import {
   ScrollView,
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../utils/theme";
 import { Loader, FeedbackModal, CustomButton } from "../components";
 import { analyzeDocument } from "../services/documentAIService";
 
 export default function DocumentScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -32,18 +34,18 @@ export default function DocumentScreen() {
   // 🧠 Belge analizi
   const handleAnalyze = async () => {
     if (!selectedFile) {
-      alert("Lütfen önce bir dosya seçin.");
+      alert(t('document.errors.noFile'));
       return;
     }
 
     try {
       setLoading(true);
       const response = await analyzeDocument(selectedFile);
-      setAnalysisResult(response || "Sonuç alınamadı");
+      setAnalysisResult(response || t('document.errors.noResult'));
       setModalVisible(true);
     } catch (error) {
       console.error("❌ Document analyze error:", error);
-      setAnalysisResult("Belge analizinde hata oluştu.");
+      setAnalysisResult(t('document.errors.analysisFailed'));
       setModalVisible(true);
     } finally {
       setLoading(false);
@@ -57,11 +59,11 @@ export default function DocumentScreen() {
     >
       <View style={styles.content}>
         <Text style={[styles.title, { color: colors.text }]}>
-          Document AI Analizi
+          {t('document.title')}
         </Text>
 
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-          PDF veya görsel yükleyerek AI destekli analiz yapabilirsiniz.
+          {t('document.subtitle')}
         </Text>
 
         <TouchableOpacity
@@ -72,12 +74,12 @@ export default function DocumentScreen() {
           onPress={handlePickFile}
         >
           <Text style={{ color: colors.text }}>
-            {selectedFile ? selectedFile.name : "📄 Dosya Seç"}
+            {selectedFile ? selectedFile.name : t('document.selectFileButton')}
           </Text>
         </TouchableOpacity>
 
         <CustomButton
-          title="Analiz Et"
+          title={t('document.analyzeButton')}
           onPress={handleAnalyze}
           disabled={!selectedFile}
           style={{ marginTop: 20 }}
@@ -85,19 +87,19 @@ export default function DocumentScreen() {
       </View>
 
       {/* Loader */}
-      <Loader visible={loading} text="Analiz ediliyor..." />
+      <Loader visible={loading} text={t('document.analyzing')} />
 
       {/* Feedback Modal */}
       <FeedbackModal
         visible={modalVisible}
-        title="Analiz Sonucu"
+        title={t('document.resultTitle')}
         message={
           typeof analysisResult === "string"
             ? analysisResult
             : JSON.stringify(analysisResult, null, 2)
         }
         primaryAction={{
-          text: "Kapat",
+          text: t('document.closeButton'),
           onPress: () => setModalVisible(false),
         }}
         onClose={() => setModalVisible(false)}

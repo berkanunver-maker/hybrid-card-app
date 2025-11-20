@@ -11,11 +11,13 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { colors } from "../utils/colors";
 import { FirestoreService } from "../services/firestoreService";
 import { getAuth } from "firebase/auth";
 
 export default function FavoritesScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -72,13 +74,13 @@ export default function FavoritesScreen() {
         <Ionicons name="star" size={24} color="#FFD700" />
         <View style={styles.cardInfo}>
           <Text style={styles.cardName} numberOfLines={1}>
-            {item.fields?.name || item.name || "İsimsiz"}
+            {item.fields?.name || item.name || t('screens.folder.unknownCard')}
           </Text>
           <Text style={styles.cardCompany} numberOfLines={1}>
-            {item.fields?.company || item.company || "Şirket bilgisi yok"}
+            {item.fields?.company || item.company || t('screens.folder.unknownCompany')}
           </Text>
           <Text style={styles.cardCategory} numberOfLines={1}>
-            📁 {item.categoryName || "Genel"}
+            📁 {item.categoryName || t('common.general')}
           </Text>
         </View>
       </View>
@@ -93,7 +95,7 @@ export default function FavoritesScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>⭐ Favoriler</Text>
+        <Text style={styles.headerTitle}>{t('screens.favorites.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -101,14 +103,14 @@ export default function FavoritesScreen() {
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Favoriler yükleniyor...</Text>
+          <Text style={styles.loadingText}>{t('screens.favorites.loading')}</Text>
         </View>
       ) : favorites.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>⭐</Text>
-          <Text style={styles.emptyText}>Henüz favori kartınız yok</Text>
+          <Text style={styles.emptyText}>{t('screens.favorites.empty')}</Text>
           <Text style={styles.emptySubtext}>
-            Kart detayında yıldız simgesine basarak favori ekleyin
+            {t('screens.favorites.emptySubtext')}
           </Text>
         </View>
       ) : (
@@ -126,7 +128,7 @@ export default function FavoritesScreen() {
           }
           ListHeaderComponent={
             <Text style={styles.countText}>
-              {favorites.length} favori kart
+              {t('screens.favorites.count', { count: favorites.length })}
             </Text>
           }
         />

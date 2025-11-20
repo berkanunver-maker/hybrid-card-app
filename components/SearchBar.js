@@ -7,15 +7,18 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../utils/colors';
 
-export default function SearchBar({ 
-  value, 
-  onChangeText, 
-  onClear, 
-  placeholder = 'İsim, şirket, hizmet ara...',
+export default function SearchBar({
+  value,
+  onChangeText,
+  onClear,
+  placeholder,
   autoFocus = true,
 }) {
+  const { t } = useTranslation();
+  const displayPlaceholder = placeholder || t('components.searchBar.placeholder');
   return (
     <View style={styles.container}>
       <Ionicons 
@@ -27,7 +30,7 @@ export default function SearchBar({
       
       <TextInput
         style={styles.input}
-        placeholder={placeholder}
+        placeholder={displayPlaceholder}
         placeholderTextColor={colors.textMuted}
         value={value}
         onChangeText={onChangeText}

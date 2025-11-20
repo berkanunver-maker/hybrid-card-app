@@ -1,12 +1,15 @@
 import React from "react";
 import { View, ActivityIndicator, Text, Modal, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { colors } from "../utils/colors";
 
 export default function Loader({
   visible = false,
-  text = "Yükleniyor...",
+  text,
   fullscreen = true,
 }) {
+  const { t } = useTranslation();
+  const displayText = text || t('components.loader.defaultMessage');
   if (!visible) return null;
 
   const Container = fullscreen ? Modal : View;
@@ -19,7 +22,7 @@ export default function Loader({
       <View style={[styles.overlay, fullscreen && styles.fullscreen]}>
         <View style={styles.loaderBox}>
           <ActivityIndicator size="large" color={colors.primary} />
-          {text ? <Text style={styles.text}>{text}</Text> : null}
+          {displayText ? <Text style={styles.text}>{displayText}</Text> : null}
         </View>
       </View>
     </Container>

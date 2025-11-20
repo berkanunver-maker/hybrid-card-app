@@ -12,6 +12,7 @@ import {
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { colors } from "../utils/colors";
 import { uploadFile } from "../services/storageService";
 import { DocumentAIService } from "../services/documentAIService";
@@ -19,6 +20,7 @@ import voiceService from "../services/voiceService";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 export default function CameraScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
   const cameraRef = useRef(null);
@@ -55,15 +57,15 @@ export default function CameraScreen() {
     try {
       setLoading(true);
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
-      if (!photo?.uri) throw new Error("Fotoğraf alınamadı.");
-      
+      if (!photo?.uri) throw new Error(t('screens.camera.errors.photoCaptureFailed'));
+
       // ✅ Fotoğrafı göster ama işleme başlama
       setCapturedPhoto(photo.uri);
       setLoading(false); // Loading'i kapat ki butonlar görünsün
-      
+
     } catch (error) {
       console.error("📸 Kamera hatası:", error);
-      Alert.alert("Hata", "Fotoğraf çekilemedi.");
+      Alert.alert(t('screens.camera.errors.errorTitle'), t('screens.camera.errors.photoCaptureFailed'));
       setLoading(false);
     }
   };
@@ -72,12 +74,12 @@ export default function CameraScreen() {
   const handleConfirmPhoto = async () => {
     // 🔧 FIX: userId kontrolü ekle
     if (!userId) {
-      Alert.alert("Hata", "Kullanıcı girişi yapılmamış. Lütfen giriş yapın.");
+      Alert.alert(t('screens.camera.errors.errorTitle'), t('screens.camera.errors.notLoggedIn'));
       navigation.navigate("Login");
       return;
     }
 
-    setStatusText("Kart görseli yakalandı, analiz başlıyor...");
+    setStatusText(t('screens.camera.status.analyzing'));
     await processImage(capturedPhoto);
   };
 
@@ -91,7 +93,7 @@ export default function CameraScreen() {
   const processImage = async (uri) => {
     try {
       setLoading(true);
-      setStatusText("Görsel yükleniyor...");
+      setStatusText(t('screens.camera.status.uploading'));
 
       // 1️⃣ Görseli yükle
       const upload = await uploadFile({
@@ -101,14 +103,14 @@ export default function CameraScreen() {
       console.log("📸 Firebase yükleme tamam:", upload.url);
 
       // 2️⃣ Document AI analizi
-      setStatusText("AI analizi yapılıyor...");
+      setStatusText(t('screens.camera.status.aiAnalyzing'));
       const result = await DocumentAIService.analyzeImageUrl({
         image_url: upload.url,
       });
 
       console.log("🧾 [DEBUG] analyzeImageUrl full response:", result);
 
-      if (!result) throw new Error("Analiz sonucu alınamadı.");
+      if (!result) throw new Error(t('screens.camera.errors.analysisFailed'));
 
       // 3️⃣ Kart verisini hazırla
       const fields = result.fields || {};
@@ -138,13 +140,13 @@ export default function CameraScreen() {
 
       console.log("✅ cardData oluşturuldu, userId:", userId);
 
-      setStatusText("Analiz tamamlandı ✅");
+      setStatusText(t('screens.camera.status.complete'));
       setLoading(false);
 
       // 4️⃣ Ses notu sor
-      Alert.alert("Ses Kaydı", "Bu kart için ses notu eklemek ister misiniz?", [
+      Alert.alert(t('screens.camera.voicePrompt.title'), t('screens.camera.voicePrompt.message'), [
         {
-          text: "Hayır",
+          text: t('screens.camera.voicePrompt.no'),
           style: "cancel",
           onPress: () => {
             // ✅ Ses notu olmadan CardDetail'e git
@@ -152,7 +154,7 @@ export default function CameraScreen() {
           },
         },
         {
-          text: "Evet",
+          text: t('screens.camera.voicePrompt.yes'),
           onPress: async () => {
             await handleVoiceRecord(cardData);
           },
@@ -161,7 +163,7 @@ export default function CameraScreen() {
     } catch (err) {
       console.error("🔥 processImage hata:", err);
       setLoading(false);
-      Alert.alert("Hata", "Görsel analizinde hata oluştu.");
+      Alert.alert(t('screens.camera.errors.errorTitle'), t('screens.camera.errors.analysisError'));
     }
   };
 
@@ -169,25 +171,25 @@ export default function CameraScreen() {
   const handleVoiceRecord = async (cardData) => {
     try {
       setLoading(true);
-      setStatusText("Ses kaydı başlatılıyor...");
+      setStatusText(t('screens.camera.status.voiceStarting'));
       const recording = await voiceService.recordAudio();
-      setStatusText("Kayıt yapılıyor... 10 saniye içinde duracak");
+      setStatusText(t('screens.camera.status.voiceRecording'));
       await new Promise((resolve) => setTimeout(resolve, 10000));
       const uri = await voiceService.stopRecording(recording);
 
-      setStatusText("Ses yükleniyor...");
+      setStatusText(t('screens.camera.status.voiceUploading'));
       const upload = await uploadFile({
         uri: uri,
         path: `voices/${Date.now()}.m4a`,
       });
 
-      setStatusText("Ses analizi yapılıyor...");
+      setStatusText(t('screens.camera.status.voiceAnalyzing'));
       const transcript = await voiceService.transcribeAudio(uri);
 
       console.log("🎙️ [DEBUG] transcribeAudio response:", transcript);
 
       const voiceNote = {
-        text: transcript.text || transcript.voice_note?.text || "Ses kaydı yapıldı",
+        text: transcript.text || transcript.voice_note?.text || t('screens.camera.status.voiceRecorded'),
         audioUrl: upload.url,
         language: transcript.language || transcript.voice_note?.language || "tr-tr",
         duration: transcript.duration || transcript.voice_note?.duration || 10,
@@ -201,14 +203,14 @@ export default function CameraScreen() {
       };
 
       setLoading(false);
-      
+
       // ✅ Ses notu ile CardDetail'e git
       navigateToCardDetail(updatedCard);
-      
+
     } catch (error) {
       console.error("🎙️ Ses kaydı hatası:", error);
       setLoading(false);
-      Alert.alert("Hata", "Ses kaydı sırasında hata oluştu.");
+      Alert.alert(t('screens.camera.errors.errorTitle'), t('screens.camera.errors.voiceError'));
     }
   };
 
@@ -224,7 +226,7 @@ export default function CameraScreen() {
   if (!permission) {
     return (
       <View style={styles.center}>
-        <Text style={styles.text}>Kamera izni kontrol ediliyor...</Text>
+        <Text style={styles.text}>{t('screens.camera.permissions.checking')}</Text>
       </View>
     );
   }
@@ -232,9 +234,9 @@ export default function CameraScreen() {
   if (!permission.granted) {
     return (
       <View style={styles.center}>
-        <Text style={styles.text}>Kamera izni gerekli</Text>
+        <Text style={styles.text}>{t('screens.camera.permissions.required')}</Text>
         <TouchableOpacity style={styles.button} onPress={requestPermission}>
-          <Text style={styles.buttonText}>İzin Ver</Text>
+          <Text style={styles.buttonText}>{t('screens.camera.permissions.grant')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -261,7 +263,7 @@ export default function CameraScreen() {
                 onPress={handleRetakePhoto}
               >
                 <Ionicons name="close-circle" size={24} color="#fff" />
-                <Text style={styles.retakeText}>Tekrar Çek</Text>
+                <Text style={styles.retakeText}>{t('screens.camera.buttons.retake')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -269,7 +271,7 @@ export default function CameraScreen() {
                 onPress={handleConfirmPhoto}
               >
                 <Ionicons name="checkmark-circle" size={24} color="#fff" />
-                <Text style={styles.confirmText}>Kullan</Text>
+                <Text style={styles.confirmText}>{t('screens.camera.buttons.use')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -285,7 +287,7 @@ export default function CameraScreen() {
               <Ionicons name="arrow-back" size={24} color="#fff" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>
-              {categoryName ? `${categoryName}` : "Kartvizit Tara"}
+              {categoryName ? `${categoryName}` : t('screens.camera.title')}
             </Text>
             <View style={{ width: 40 }} />
           </View>

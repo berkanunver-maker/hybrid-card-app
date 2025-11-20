@@ -419,8 +419,8 @@ export default function HomeScreen() {
           setSelectedFolder(null);
         }}
         onConfirm={handleConfirmDelete}
-        title="Klasörü Sil?"
-        message="Bu işlem geri alınamaz."
+        title={t('components.deleteConfirm.title')}
+        message={t('components.deleteConfirm.message')}
         itemName={selectedFolder?.name}
         itemCount={selectedFolder?.cardCount || 0}
         showMoveOption={true}

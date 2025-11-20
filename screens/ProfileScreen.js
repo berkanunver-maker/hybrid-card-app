@@ -96,7 +96,7 @@ export default function ProfileScreen() {
 
         <View style={styles.profileInfo}>
           <Text style={styles.profileName}>
-            {profileData?.displayName || user?.displayName || "Kullanıcı"}
+            {profileData?.displayName || user?.displayName || t('profile.defaultName')}
           </Text>
           <Text style={styles.profileEmail}>{user?.email}</Text>
 

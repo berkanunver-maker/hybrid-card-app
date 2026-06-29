@@ -23,6 +23,7 @@ import CardHolderScreen from "../screens/CardHolderScreen";
 // 🆕 Yeni Ekranlar
 import FolderScreen from "../screens/FolderScreen";
 import FavoritesScreen from "../screens/FavoritesScreen";
+import AllCardsScreen from "../screens/AllCardsScreen";
 import SearchScreen from "../screens/SearchScreen";
 
 // 🆕 Şifremi Unuttum Ekranı
@@ -136,6 +137,13 @@ export default function StackNavigator() {
       <Stack.Screen
         name="Favorites"
         component={FavoritesScreen}
+        options={{ headerShown: false }}
+      />
+
+      {/* 🗂️ Tüm Kartlar */}
+      <Stack.Screen
+        name="AllCards"
+        component={AllCardsScreen}
         options={{ headerShown: false }}
       />
 

@@ -276,7 +276,7 @@ export default function HomeScreen() {
           <AppText variant="caption" color="textSecondary">{t("home.cardCount", { count: favoriteCount })}</AppText>
         </SurfaceCard>
         <SurfaceCard
-          onPress={() => Alert.alert(t("home.allCards"), t("home.comingSoon"))}
+          onPress={() => navigation.navigate("AllCards")}
           accessibilityLabel="Tüm kartlar"
           style={styles.quickCard}
         >

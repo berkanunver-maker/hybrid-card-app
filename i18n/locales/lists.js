@@ -19,6 +19,11 @@ export default {
     "lists.exporting": "Excel oluşturuluyor...",
     "lists.exportToExcel": "Excel'e Aktar",
 
+    // AllCardsScreen
+    "lists.allCardsTitle": "Tüm Kartlar",
+    "lists.allCardsEmptyTitle": "Henüz kart yok",
+    "lists.allCardsEmptyDescription": "İlk kartını taramak veya elle eklemek için ana sayfadaki butonları kullan.",
+
     // FavoritesScreen
     "lists.favoritesTitle": "Favoriler",
     "lists.loadingFavorites": "Favoriler yükleniyor...",
@@ -52,6 +57,11 @@ export default {
     "lists.addFirstCard": "Add First Card",
     "lists.exporting": "Creating Excel...",
     "lists.exportToExcel": "Export to Excel",
+
+    // AllCardsScreen
+    "lists.allCardsTitle": "All Cards",
+    "lists.allCardsEmptyTitle": "No cards yet",
+    "lists.allCardsEmptyDescription": "Use the buttons on the home screen to scan or manually add your first card.",
 
     // FavoritesScreen
     "lists.favoritesTitle": "Favorites",

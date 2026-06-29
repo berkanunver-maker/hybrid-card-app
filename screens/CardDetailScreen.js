@@ -1,34 +1,53 @@
-import React, { useState, useEffect } from "react";
+// screens/CardDetailScreen.js
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   Alert,
-  ActivityIndicator,
   TextInput,
-  Modal,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { colors } from "../utils/colors";
+import { useTheme } from "../utils/theme";
 import { voiceService } from "../services/voiceService";
 import { FirestoreService } from "../services/firestoreService";
+import { cleanUrl } from "../utils/format";
+import { saveContactToPhone } from "../services/contactsService";
+import {
+  ScreenContainer,
+  AppText,
+  SurfaceCard,
+  Button,
+  EmptyState,
+  BottomSheet,
+  DigitalCard,
+  CardShareSheet,
+  Icon,
+  VoiceRecorder,
+} from "../components/ui";
 import MoveCardModal from "../components/MoveCardModal";
 import DeleteConfirmDialog from "../components/DeleteConfirmDialog";
 import { getAuth } from "firebase/auth";
+import { useTranslation } from "../i18n/I18nProvider";
 
 export default function CardDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { t } = useTranslation();
+  const { colors, spacing, radius, typography } = useTheme();
+  const styles = useMemo(
+    () => createStyles(colors, spacing, radius),
+    [colors, spacing, radius]
+  );
+
   const { cardData: initialCardData, isNewCard } = route.params || {};
-  
+
   const [cardData, setCardData] = useState(initialCardData);
   const [playing, setPlaying] = useState(false);
   const [isFavorite, setIsFavorite] = useState(initialCardData?.isFavorite || false);
   const [saving, setSaving] = useState(false);
-  
+
   // Yeni state'ler - düzenleme ve modal yönetimi
   const [isEditing, setIsEditing] = useState(false);
   const [editedFields, setEditedFields] = useState({});
@@ -36,7 +55,13 @@ export default function CardDetailScreen() {
   const [menuVisible, setMenuVisible] = useState(false);
   const [moveModalVisible, setMoveModalVisible] = useState(false);
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
-  
+  const [shareVisible, setShareVisible] = useState(false);
+  const [voiceRecVisible, setVoiceRecVisible] = useState(false);
+  const [editingTranscript, setEditingTranscript] = useState(false);
+  const [transcriptDraft, setTranscriptDraft] = useState("");
+  const [editingNote, setEditingNote] = useState(false);
+  const [noteDraft, setNoteDraft] = useState("");
+
   const auth = getAuth();
   const userId = auth.currentUser?.uid;
 
@@ -48,51 +73,48 @@ export default function CardDetailScreen() {
           const fetchedCategories = await FirestoreService.getUserCategories(userId);
           setCategories(fetchedCategories);
         } catch (error) {
-          console.error("❌ Kategoriler yüklenemedi:", error);
+          // Kategoriler yüklenemedi — sessiz geç (UI bozulmasın)
         }
       }
     };
     loadCategories();
   }, [userId]);
 
-  // 🔹 Kart verisi yoksa
+  // Kart verisi yoksa
   if (!cardData) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.text}>Kart verisi bulunamadı.</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={[styles.text, { color: colors.primary, marginTop: 10 }]}>
-            Geri Dön
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenContainer padded>
+        <EmptyState
+          icon="alert-circle-outline"
+          title={t("card.notFoundTitle")}
+          description={t("card.notFoundDescription")}
+          actionLabel={t("card.goBack")}
+          onAction={() => navigation.goBack()}
+        />
+      </ScreenContainer>
     );
   }
 
-  // ✅ Fields düzeltmesi — hem `fields` hem düz yapıyı destekler
+  // Fields düzeltmesi — hem `fields` hem düz yapıyı destekler
   const fields =
     (cardData.fields && Object.keys(cardData.fields).length > 0
       ? cardData.fields
       : cardData) || {};
 
-  // ✅ Ses notunu hem fields içinde hem dışarıda ara
+  // Ses notunu hem fields içinde hem dışarıda ara
   const voiceNote = cardData.voice_note || fields.voice_note || null;
   const voiceText = voiceNote?.text || null;
 
-  console.log("🔍 [DEBUG] cardData:", cardData);
-  console.log("🔍 [DEBUG] isNewCard:", isNewCard);
-  console.log("🔍 [DEBUG] fields:", fields);
-  console.log("🔍 [DEBUG] voiceNote:", voiceNote);
-  console.log("🔍 [DEBUG] voiceText:", voiceText);
+  // Yazılı not (kart-üstü serbest metin)
+  const note = cardData.note || fields.note || "";
 
-  // 💾 Kartı Firestore'a kaydet
+  // Kartı Firestore'a kaydet
   const handleSaveCard = async () => {
     try {
       setSaving(true);
 
       // Firestore'a kaydet
       const savedCard = await FirestoreService.addCard(cardData);
-      console.log("✅ Kart Firestore'a kaydedildi:", savedCard.id);
 
       // Kaydedilen kartın tam detayını çek
       const fullCard = await FirestoreService.getCardById(savedCard.id);
@@ -101,33 +123,32 @@ export default function CardDetailScreen() {
       setCardData(fullCard);
 
       Alert.alert(
-        "Başarılı! 🎉",
-        "Kart başarıyla kaydedildi.",
+        t("card.saveSuccessTitle"),
+        t("card.saveSuccessMessage"),
         [
           {
-            text: "Ana Sayfa",
+            text: t("card.homeAction"),
             onPress: () => navigation.navigate("Main"),
           },
           {
-            text: "Yeni Kart Tara",
+            text: t("card.scanNewAction"),
             onPress: () => navigation.navigate("Camera"),
           },
         ]
       );
 
       setSaving(false);
-      
+
       // Navigate'i route params'dan kaldır
       navigation.setParams({ isNewCard: false });
-      
+
     } catch (error) {
-      console.error("❌ Kart kaydedilemedi:", error);
       setSaving(false);
-      Alert.alert("Hata", "Kart kaydedilemedi. Lütfen tekrar deneyin.");
+      Alert.alert(t("common.error"), t("card.saveError"));
     }
   };
 
-  // 🎧 Ses oynatma
+  // Ses oynatma
   const playVoiceNote = async () => {
     try {
       if (!voiceService?.playAudio) {
@@ -136,13 +157,71 @@ export default function CardDetailScreen() {
       setPlaying(true);
       await voiceService.playAudio(voiceNote?.audioUrl);
     } catch (err) {
-      console.error("🎧 Ses oynatma hatası:", err);
+      // Ses oynatma hatası — kullanıcı akışı bozulmasın
     } finally {
       setPlaying(false);
     }
   };
 
-  // ⭐ Favori toggle
+  // Ses notunu kalıcılaştır (kaydedilmiş kartsa Firestore'a da yaz)
+  const persistVoiceNote = async (vn) => {
+    setCardData((prev) => ({ ...prev, voice_note: vn }));
+    if (cardData.id) {
+      try {
+        await FirestoreService.updateCard(cardData.id, { voice_note: vn });
+      } catch (e) {
+        Alert.alert(t("common.error"), t("card.voiceSaveError"));
+      }
+    }
+  };
+
+  const handleVoiceComplete = (vn) => {
+    setVoiceRecVisible(false);
+    persistVoiceNote(vn);
+  };
+
+  const handleDeleteVoice = () => {
+    Alert.alert(t("card.deleteVoiceTitle"), t("card.deleteVoiceMessage"), [
+      { text: t("common.dismiss"), style: "cancel" },
+      { text: t("common.delete"), style: "destructive", onPress: () => persistVoiceNote(null) },
+    ]);
+  };
+
+  const startEditTranscript = () => {
+    setTranscriptDraft(voiceText || "");
+    setEditingTranscript(true);
+  };
+
+  const saveTranscript = () => {
+    const updated = { ...(voiceNote || {}), text: transcriptDraft };
+    persistVoiceNote(updated);
+    setEditingTranscript(false);
+  };
+
+  // Yazılı notu kalıcılaştır (kaydedilmiş kartsa Firestore'a da yaz)
+  const persistNote = async (text) => {
+    const value = (text || "").trim();
+    setCardData((prev) => ({ ...prev, note: value }));
+    if (cardData.id) {
+      try {
+        await FirestoreService.updateCard(cardData.id, { note: value });
+      } catch (e) {
+        Alert.alert(t("common.error"), t("card.noteSaveError"));
+      }
+    }
+  };
+
+  const startEditNote = () => {
+    setNoteDraft(note || "");
+    setEditingNote(true);
+  };
+
+  const saveNote = () => {
+    persistNote(noteDraft);
+    setEditingNote(false);
+  };
+
+  // Favori toggle
   const toggleFavorite = async () => {
     try {
       const newFavoriteStatus = !isFavorite;
@@ -153,52 +232,53 @@ export default function CardDetailScreen() {
         await FirestoreService.updateCard(cardData.id, {
           isFavorite: newFavoriteStatus,
         });
-        console.log("✅ Favori durumu güncellendi:", newFavoriteStatus);
       }
     } catch (error) {
-      console.error("❌ Favori güncellenemedi:", error);
       // Hata durumunda geri al
       setIsFavorite(!isFavorite);
-      Alert.alert("Hata", "Favori durumu güncellenemedi.");
+      Alert.alert(t("common.error"), t("card.favoriteError"));
     }
   };
 
-  // 📁 Kategori değiştir
+  // Kategori değiştir
   const handleChangeCategory = () => {
     setMoveModalVisible(true);
   };
 
-  // 🔄 Kartı taşı
+  // Kartı taşı
   const handleMoveCard = async (newCategoryId) => {
     try {
-      if (!cardData.id || !cardData.categoryId) {
-        Alert.alert("Hata", "Kart bilgisi eksik.");
+      // Sadece kart ID'sini kontrol et (categoryId null olabilir)
+      if (!cardData.id) {
+        Alert.alert(t("common.error"), t("card.notSavedYet"));
         return;
       }
 
+      // Mevcut categoryId'yi al (yoksa null)
+      const currentCategoryId = cardData.categoryId || null;
+
       await FirestoreService.moveCard(
         cardData.id,
-        cardData.categoryId,
+        currentCategoryId,
         newCategoryId
       );
 
       // Yeni kategori bilgisini al
       const newCategory = categories.find(cat => cat.id === newCategoryId);
-      
+
       setCardData({
         ...cardData,
         categoryId: newCategoryId,
         categoryName: newCategory?.name
       });
 
-      Alert.alert("Başarılı", `Kart "${newCategory?.name}" klasörüne taşındı.`);
+      Alert.alert(t("common.success"), t("card.moveSuccess", { name: newCategory?.name }));
     } catch (error) {
-      console.error("❌ Kart taşınamadı:", error);
-      Alert.alert("Hata", "Kart taşınamadı: " + error.message);
+      Alert.alert(t("common.error"), t("card.moveError", { error: error.message }));
     }
   };
 
-  // ✏️ Düzenleme modunu aç/kapat
+  // Düzenleme modunu aç/kapat
   const toggleEditMode = () => {
     if (isEditing) {
       // Kaydet
@@ -220,11 +300,11 @@ export default function CardDetailScreen() {
     }
   };
 
-  // 💾 Düzenlemeleri kaydet
+  // Düzenlemeleri kaydet
   const handleSaveEdits = async () => {
     try {
       if (!cardData.id) {
-        Alert.alert("Hata", "Kart kaydedilmemiş.");
+        Alert.alert(t("common.error"), t("card.notSaved"));
         return;
       }
 
@@ -246,11 +326,10 @@ export default function CardDetailScreen() {
 
       setIsEditing(false);
       setSaving(false);
-      Alert.alert("Başarılı", "Kart güncellendi!");
+      Alert.alert(t("common.success"), t("card.updateSuccess"));
     } catch (error) {
-      console.error("❌ Kart güncellenemedi:", error);
       setSaving(false);
-      Alert.alert("Hata", "Kart güncellenemedi: " + error.message);
+      Alert.alert(t("common.error"), t("card.updateError", { error: error.message }));
     }
   };
 
@@ -260,7 +339,7 @@ export default function CardDetailScreen() {
     setEditedFields({});
   };
 
-  // 🗑️ Kartı sil
+  // Kartı sil
   const handleDeleteCard = () => {
     setDeleteDialogVisible(true);
   };
@@ -270,17 +349,32 @@ export default function CardDetailScreen() {
     try {
       if (cardData.id) {
         await FirestoreService.deleteCard(cardData.id);
-        console.log("✅ Kart silindi:", cardData.id);
-        Alert.alert("Başarılı", "Kart silindi.");
+        Alert.alert(t("common.success"), t("card.deleteSuccess"));
         navigation.goBack();
       }
     } catch (error) {
-      console.error("❌ Kart silinemedi:", error);
-      Alert.alert("Hata", "Kart silinemedi.");
+      Alert.alert(t("common.error"), t("card.deleteError"));
     }
   };
 
   // Menü işlemleri
+  const handleMenuShare = () => {
+    setMenuVisible(false);
+    setTimeout(() => setShareVisible(true), 300);
+  };
+
+  const handleMenuAddContact = async () => {
+    setMenuVisible(false);
+    const res = await saveContactToPhone(fields);
+    if (res.success) {
+      Alert.alert(t("common.success"), t("card.contactAddedSuccess"));
+    } else if (res.error === "permission") {
+      Alert.alert(t("card.permissionRequiredTitle"), t("card.contactPermissionMessage"));
+    } else {
+      Alert.alert(t("common.error"), t("card.contactAddError"));
+    }
+  };
+
   const handleMenuEdit = () => {
     setMenuVisible(false);
     setTimeout(() => toggleEditMode(), 300);
@@ -296,274 +390,362 @@ export default function CardDetailScreen() {
     setTimeout(() => setDeleteDialogVisible(true), 300);
   };
 
-  // 🔹 Sabit alan listesi — boşlar "—"
+  // Sabit alan listesi — boşlar "—". Web alanı cleanUrl ile temizlenir.
   const infoItems = [
-    { icon: "🏢", label: "Şirket", value: fields.company || "—", fieldKey: "company" },
-    { icon: "👤", label: "İsim", value: fields.name || "—", fieldKey: "name" },
-    { icon: "💼", label: "Pozisyon", value: fields.title || "—", fieldKey: "title" },
-    { icon: "📞", label: "Mobil", value: fields.mobile || "—", fieldKey: "mobile" },
-    { icon: "☎️", label: "Telefon", value: fields.phone || "—", fieldKey: "phone" },
-    { icon: "📧", label: "E-posta", value: fields.email || "—", fieldKey: "email" },
-    { icon: "📍", label: "Adres", value: fields.address || "—", fieldKey: "address" },
-    { icon: "🌐", label: "Web", value: fields.website || "—", fieldKey: "website" },
+    { icon: "business-outline", label: t("card.labelCompany"), value: fields.company || "—", fieldKey: "company" },
+    { icon: "person-outline", label: t("card.labelName"), value: fields.name || "—", fieldKey: "name" },
+    { icon: "briefcase-outline", label: t("card.labelTitle"), value: fields.title || "—", fieldKey: "title" },
+    { icon: "call-outline", label: t("card.labelMobile"), value: fields.mobile || "—", fieldKey: "mobile" },
+    { icon: "call", label: t("card.labelPhone"), value: fields.phone || "—", fieldKey: "phone" },
+    { icon: "mail-outline", label: t("card.labelEmail"), value: fields.email || "—", fieldKey: "email" },
+    { icon: "location-outline", label: t("card.labelAddress"), value: fields.address || "—", fieldKey: "address" },
+    { icon: "globe-outline", label: t("card.labelWebsite"), value: fields.website ? cleanUrl(fields.website) : "—", fieldKey: "website" },
   ];
 
+  const currentCategory = categories.find(cat => cat.id === cardData?.categoryId);
+
   return (
-    <View style={styles.container}>
-      {/* 🔧 FIXED HEADER - Padding ve Flex düzeltildi */}
+    <ScreenContainer>
+      {/* Sabit Başlık */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <Pressable
           onPress={() => navigation.goBack()}
-          style={styles.backButton}
+          style={styles.iconButton}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Geri dön"
         >
-          <Ionicons name="chevron-back" size={26} color={colors.primary} />
-        </TouchableOpacity>
-        
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {isNewCard ? "Kart Önizleme" : "Kart Detayı"}
-        </Text>
-        
+          <Icon name="arrow-back" size={24} color={colors.text} />
+        </Pressable>
+        <AppText variant="heading" style={styles.headerTitle} numberOfLines={1}>
+          {t("card.detailTitle")}
+        </AppText>
         <View style={styles.headerRight}>
-          {/* 💾 KAYDET BUTONU (Sadece yeni kartlar için) */}
-          {isNewCard && (
-            <TouchableOpacity 
-              onPress={handleSaveCard} 
-              style={styles.iconButton}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Ionicons name="save-outline" size={24} color={colors.primary} />
-              )}
-            </TouchableOpacity>
-          )}
-          
-          {/* ✏️ DÜZENLE/KAYDET BUTONU (Kaydedilmiş kartlar için) */}
-          {!isNewCard && (
-            <TouchableOpacity 
-              onPress={toggleEditMode} 
-              style={styles.iconButton}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Ionicons 
-                  name={isEditing ? "checkmark" : "create-outline"} 
-                  size={24} 
-                  color={isEditing ? "#10B981" : colors.primary} 
-                />
-              )}
-            </TouchableOpacity>
-          )}
-          
-          {/* ⭐ Favori Butonu (Sadece kaydedilmiş kartlar için) */}
-          {!isNewCard && (
-            <TouchableOpacity onPress={toggleFavorite} style={styles.iconButton}>
-              <Ionicons
-                name={isFavorite ? "star" : "star-outline"}
-                size={24}
-                color={isFavorite ? "#FFD700" : colors.primary}
-              />
-            </TouchableOpacity>
-          )}
-          
-          {/* ⋮ MENÜ BUTONU (Kaydedilmiş kartlar için) */}
-          {!isNewCard && (
-            <TouchableOpacity 
-              onPress={() => setMenuVisible(true)} 
-              style={styles.iconButton}
-            >
-              <Ionicons name="ellipsis-vertical" size={24} color={colors.primary} />
-            </TouchableOpacity>
-          )}
+          <Pressable
+            onPress={toggleFavorite}
+            style={styles.iconButton}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={isFavorite ? "Favorilerden çıkar" : "Favorilere ekle"}
+            accessibilityState={{ selected: isFavorite }}
+          >
+            <Icon
+              name={isFavorite ? "star" : "star-outline"}
+              size={24}
+              color={isFavorite ? colors.star : colors.text}
+            />
+          </Pressable>
+          <Pressable
+            onPress={() => setMenuVisible(true)}
+            style={styles.iconButton}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Kart menüsü"
+          >
+            <Icon name="ellipsis-horizontal" size={24} color={colors.text} />
+          </Pressable>
         </View>
       </View>
 
-      {/* İPTAL BUTONU (Düzenleme modunda) */}
+      {/* Düzenleme Modu Bandı */}
       {isEditing && (
         <View style={styles.editBanner}>
-          <Text style={styles.editBannerText}>✏️ Düzenleme Modu</Text>
-          <TouchableOpacity onPress={handleCancelEdit}>
-            <Text style={styles.editBannerCancel}>İptal</Text>
-          </TouchableOpacity>
+          <View style={styles.editBannerLeft}>
+            <Icon name="create-outline" size={18} color={colors.primary} />
+            <AppText variant="label" color="primary" style={{ marginLeft: 8 }}>
+              {t("card.editMode")}
+            </AppText>
+          </View>
+          <Pressable
+            onPress={handleCancelEdit}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Düzenlemeyi iptal et"
+          >
+            <AppText variant="bodyStrong" color="primary">{t("common.cancel")}</AppText>
+          </Pressable>
         </View>
       )}
 
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ⚠️ Yeni Kart Uyarısı */}
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {/* Sinyatür kart nesnesi (kahraman) */}
+        {!isEditing && (
+          <DigitalCard
+            name={fields.name}
+            company={fields.company}
+            title={fields.title}
+            mobile={fields.mobile}
+            phone={fields.phone}
+            email={fields.email}
+            website={fields.website}
+            onPress={() => setShareVisible(true)}
+            style={{ marginBottom: spacing.xl }}
+          />
+        )}
+
+        {/* Yeni Kart Uyarısı */}
         {isNewCard && (
           <View style={styles.warningBanner}>
-            <Ionicons name="information-circle" size={24} color="#FF9500" />
-            <Text style={styles.warningText}>
-              Bu kart henüz kaydedilmedi. Kaydetmek için sağ üstteki 💾 butonuna tıklayın.
-            </Text>
+            <Icon name="alert-circle" size={20} color={colors.warning} />
+            <AppText variant="label" color="warning" style={styles.warningText}>
+              {t("card.unsavedWarning")}
+            </AppText>
           </View>
         )}
 
-        {/* 📁 Kategori Badge */}
-        {cardData.categoryName && (
-          <TouchableOpacity
+        {/* Kategori Satırı */}
+        {currentCategory && (
+          <Pressable
             style={styles.categoryBadge}
             onPress={handleChangeCategory}
+            accessibilityRole="button"
+            accessibilityLabel={`Klasör: ${currentCategory.name}. Değiştirmek için dokunun.`}
           >
-            <Text style={styles.categoryIcon}>📁</Text>
-            <Text style={styles.categoryText}>{cardData.categoryName}</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.secondaryText} />
-          </TouchableOpacity>
+            {/* Kullanıcı verisi olan emoji olduğu gibi korunur */}
+            <AppText style={styles.categoryIcon}>{currentCategory.icon}</AppText>
+            <AppText variant="bodyStrong" style={styles.categoryText} numberOfLines={1}>
+              {currentCategory.name}
+            </AppText>
+            <Icon name="chevron-forward" size={20} color={colors.textSecondary} />
+          </Pressable>
         )}
 
-        {/* 🔹 Bilgi Alanları */}
-        <View style={styles.card}>
+        {/* Kart Bilgileri */}
+        <SurfaceCard style={{ marginBottom: spacing.xl }}>
           {infoItems.map((item, index) => (
-            <View key={index} style={{ marginBottom: 10 }}>
-              <Text style={styles.label}>
-                {item.icon} {item.label}
-              </Text>
+            <View
+              key={index}
+              style={[styles.infoRow, index === infoItems.length - 1 && { marginBottom: 0 }]}
+            >
+              <View style={styles.labelRow}>
+                <Icon name={item.icon} size={16} color={colors.primary} />
+                <AppText variant="label" color="primary" style={{ marginLeft: 8 }}>
+                  {item.label}
+                </AppText>
+              </View>
               {isEditing ? (
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, typography.body]}
                   value={editedFields[item.fieldKey] || ""}
-                  onChangeText={(text) => 
+                  onChangeText={(text) =>
                     setEditedFields({ ...editedFields, [item.fieldKey]: text })
                   }
-                  placeholder={item.label}
-                  placeholderTextColor="#777"
+                  placeholder={`${item.label} girin`}
+                  placeholderTextColor={colors.textMuted}
+                  accessibilityLabel={item.label}
                 />
               ) : (
-                <Text
-                  style={[
-                    styles.value,
-                    item.value === "—" && { color: "#777" },
-                  ]}
-                >
+                <AppText variant="bodyStrong" style={{ marginTop: 4 }}>
                   {item.value}
-                </Text>
+                </AppText>
               )}
             </View>
           ))}
-        </View>
+        </SurfaceCard>
 
-        {/* 🔹 Ses Notu Alanı */}
-        <View style={styles.voiceBox}>
-          <Text style={styles.voiceTitle}>🎙️ Ses Notu</Text>
+        {/* Yazılı Not modülü — serbest metin (dokun → düzenle) */}
+        <SurfaceCard style={{ marginBottom: spacing.xl }}>
+          <View style={styles.voiceTitleRow}>
+            <Icon name="document-text-outline" size={18} color={colors.primary} />
+            <AppText variant="heading" color="primary" style={{ marginLeft: 8, flex: 1 }}>
+              {t("card.note")}
+            </AppText>
+          </View>
+          {editingNote ? (
+            <View style={{ marginTop: spacing.sm }}>
+              <TextInput
+                style={[styles.input, typography.body, { minHeight: 90, textAlignVertical: "top" }]}
+                value={noteDraft}
+                onChangeText={setNoteDraft}
+                multiline
+                placeholder={t("card.notePlaceholder")}
+                placeholderTextColor={colors.textMuted}
+                accessibilityLabel={t("card.note")}
+              />
+              <View style={styles.voiceActions}>
+                <Button
+                  title={t("common.cancel")}
+                  variant="ghost"
+                  size="sm"
+                  fullWidth={false}
+                  onPress={() => setEditingNote(false)}
+                />
+                <Button title={t("common.save")} size="sm" fullWidth={false} onPress={saveNote} />
+              </View>
+            </View>
+          ) : (
+            <Pressable
+              style={styles.transcriptBox}
+              onPress={startEditNote}
+              accessibilityRole="button"
+              accessibilityLabel={t("card.note")}
+            >
+              <AppText variant="body" color="textSecondary" style={{ flex: 1 }}>
+                {note ? note : t("card.noNote")}
+              </AppText>
+              <Icon name="create-outline" size={16} color={colors.textMuted} />
+            </Pressable>
+          )}
+        </SurfaceCard>
+
+        {/* Ses Notu modülü — oynat / düzenle / tekrar kaydet / sil / ekle */}
+        <SurfaceCard style={{ marginBottom: spacing.xl }}>
+          <View style={styles.voiceTitleRow}>
+            <Icon name="mic" size={18} color={colors.primary} />
+            <AppText variant="heading" color="primary" style={{ marginLeft: 8, flex: 1 }}>
+              {t("card.voiceNote")}
+            </AppText>
+            {voiceNote && (
+              <Pressable
+                onPress={handleDeleteVoice}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Ses notunu sil"
+              >
+                <Icon name="trash-outline" size={20} color={colors.danger} />
+              </Pressable>
+            )}
+          </View>
 
           {voiceNote ? (
             <>
-              <TouchableOpacity
-                style={styles.playButton}
-                onPress={playVoiceNote}
-                disabled={playing}
-              >
-                <Ionicons
-                  name={playing ? "stop-circle" : "play-circle"}
-                  size={40}
-                  color={colors.primary}
-                />
-                <Text style={styles.playText}>
-                  {playing ? "Çalıyor..." : "Dinle"}
-                </Text>
-              </TouchableOpacity>
+              {voiceNote.audioUrl ? (
+                <Pressable
+                  style={styles.playButton}
+                  onPress={playVoiceNote}
+                  accessibilityRole="button"
+                  accessibilityLabel={playing ? "Ses oynatılıyor" : "Ses notunu dinle"}
+                >
+                  <Icon
+                    name={playing ? "pause-circle" : "play-circle"}
+                    size={40}
+                    color={colors.primary}
+                  />
+                  <AppText variant="body" style={{ marginLeft: 8 }}>
+                    {playing ? t("card.playing") : t("card.listen")}
+                  </AppText>
+                </Pressable>
+              ) : null}
 
-              {voiceText && (
-                <View style={styles.transcriptBox}>
-                  <Text style={styles.transcriptText}>"{voiceText}"</Text>
+              {editingTranscript ? (
+                <View style={{ marginTop: spacing.sm }}>
+                  <TextInput
+                    style={[styles.input, typography.body, { minHeight: 72, textAlignVertical: "top" }]}
+                    value={transcriptDraft}
+                    onChangeText={setTranscriptDraft}
+                    multiline
+                    placeholder={t("card.editTranscript")}
+                    placeholderTextColor={colors.textMuted}
+                    accessibilityLabel="Transkript"
+                  />
+                  <View style={styles.voiceActions}>
+                    <Button
+                      title={t("common.cancel")}
+                      variant="ghost"
+                      size="sm"
+                      fullWidth={false}
+                      onPress={() => setEditingTranscript(false)}
+                    />
+                    <Button title={t("common.save")} size="sm" fullWidth={false} onPress={saveTranscript} />
+                  </View>
                 </View>
+              ) : (
+                <Pressable
+                  style={styles.transcriptBox}
+                  onPress={startEditTranscript}
+                  accessibilityRole="button"
+                  accessibilityLabel="Transkripti düzenle"
+                >
+                  <AppText
+                    variant="body"
+                    color="textSecondary"
+                    style={{ flex: 1, fontStyle: voiceText ? "italic" : "normal" }}
+                  >
+                    {voiceText ? `"${voiceText}"` : t("card.noTranscript")}
+                  </AppText>
+                  <Icon name="create-outline" size={16} color={colors.textMuted} />
+                </Pressable>
               )}
+
+              <View style={{ marginTop: spacing.md }}>
+                <Button
+                  title={t("card.recordAgain")}
+                  icon="mic"
+                  variant="secondary"
+                  onPress={() => setVoiceRecVisible(true)}
+                />
+              </View>
             </>
           ) : (
-            <Text style={styles.noVoice}>Ses kaydı bulunmuyor.</Text>
+            <Button
+              title={t("card.addVoiceNote")}
+              icon="mic"
+              variant="secondary"
+              onPress={() => setVoiceRecVisible(true)}
+              style={{ marginTop: spacing.sm }}
+            />
           )}
-        </View>
+        </SurfaceCard>
 
-        {/* 🔹 Aksiyonlar */}
-        <View style={styles.actionsContainer}>
-          {/* Yeni Kart Tara */}
-          <TouchableOpacity
-            style={styles.newCardButton}
-            onPress={() => navigation.navigate("Camera")}
-          >
-            <Ionicons name="camera" size={22} color={colors.background} />
-            <Text style={styles.newCardText}>Yeni Kart Tara</Text>
-          </TouchableOpacity>
+        {/* Aksiyonlar */}
+        {isNewCard ? (
+          <Button
+            title={t("card.saveCard")}
+            icon="checkmark-circle"
+            onPress={handleSaveCard}
+            loading={saving}
+            disabled={saving}
+          />
+        ) : isEditing ? (
+          <Button
+            title={t("card.saveChanges")}
+            icon="checkmark-circle"
+            onPress={toggleEditMode}
+            loading={saving}
+            disabled={saving}
+          />
+        ) : null}
 
-          {/* Kartı Sil (Sadece kaydedilmiş kartlar için) */}
-          {!isNewCard && (
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={handleDeleteCard}
-            >
-              <Ionicons name="trash-outline" size={22} color="#FF3B30" />
-              <Text style={styles.deleteText}>Kartı Sil</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* 🔹 Meta Bilgiler */}
+        {/* Meta Bilgiler */}
         {cardData.createdAt && (
           <View style={styles.metaBox}>
-            <Text style={styles.metaText}>
-              📅 Eklenme: {new Date(cardData.createdAt).toLocaleDateString("tr-TR")}
-            </Text>
-            {cardData.qaScore !== undefined && (
-              <Text style={styles.metaText}>
-                📊 Kalite Skoru: {cardData.qaScore}/100
-              </Text>
+            <AppText variant="caption" color="textMuted">
+              {t("card.createdAt", { date: new Date(cardData.createdAt).toLocaleString("tr-TR") })}
+            </AppText>
+            {cardData.updatedAt && cardData.updatedAt !== cardData.createdAt && (
+              <AppText variant="caption" color="textMuted" style={{ marginTop: 4 }}>
+                {t("card.updatedAt", { date: new Date(cardData.updatedAt).toLocaleString("tr-TR") })}
+              </AppText>
             )}
           </View>
         )}
       </ScrollView>
 
-      {/* Menü Modal */}
-      <Modal
-        visible={menuVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setMenuVisible(false)}
-      >
-        <TouchableOpacity 
-          style={styles.menuOverlay} 
-          activeOpacity={1}
-          onPress={() => setMenuVisible(false)}
-        >
-          <View style={styles.menuContainer}>
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={handleMenuEdit}
-            >
-              <Ionicons name="create-outline" size={22} color={colors.primary} />
-              <Text style={styles.menuItemText}>Düzenle</Text>
-            </TouchableOpacity>
-            
-            <View style={styles.menuDivider} />
-            
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={handleMenuMove}
-            >
-              <Ionicons name="folder-outline" size={22} color={colors.primary} />
-              <Text style={styles.menuItemText}>Taşı</Text>
-            </TouchableOpacity>
-            
-            <View style={styles.menuDivider} />
-            
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={handleMenuDelete}
-            >
-              <Ionicons name="trash-outline" size={22} color="#EF4444" />
-              <Text style={[styles.menuItemText, styles.menuItemDanger]}>Sil</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      {/* Menü */}
+      <BottomSheet visible={menuVisible} onClose={() => setMenuVisible(false)}>
+        <Pressable style={styles.sheetRow} onPress={handleMenuShare}>
+          <Icon name="share-social-outline" size={22} color={colors.primary} />
+          <AppText variant="bodyStrong" style={{ marginLeft: 12 }}>{t("common.share")}</AppText>
+        </Pressable>
+        <Pressable style={styles.sheetRow} onPress={handleMenuAddContact}>
+          <Icon name="person-add-outline" size={22} color={colors.primary} />
+          <AppText variant="bodyStrong" style={{ marginLeft: 12 }}>{t("card.addToContacts")}</AppText>
+        </Pressable>
+        <Pressable style={styles.sheetRow} onPress={handleMenuEdit}>
+          <Icon name="create-outline" size={22} color={colors.primary} />
+          <AppText variant="bodyStrong" style={{ marginLeft: 12 }}>{t("common.edit")}</AppText>
+        </Pressable>
+        <Pressable style={styles.sheetRow} onPress={handleMenuMove}>
+          <Icon name="folder-outline" size={22} color={colors.primary} />
+          <AppText variant="bodyStrong" style={{ marginLeft: 12 }}>{t("card.moveToFolder")}</AppText>
+        </Pressable>
+        <Pressable style={styles.sheetRow} onPress={handleMenuDelete}>
+          <Icon name="trash-outline" size={22} color={colors.danger} />
+          <AppText variant="bodyStrong" style={{ marginLeft: 12, color: colors.danger }}>{t("common.delete")}</AppText>
+        </Pressable>
+      </BottomSheet>
 
-      {/* Move Card Modal */}
+      {/* Kartı Taşı Modalı */}
       <MoveCardModal
         visible={moveModalVisible}
         onClose={() => setMoveModalVisible(false)}
@@ -573,292 +755,187 @@ export default function CardDetailScreen() {
         }}
         currentFolderId={cardData?.categoryId}
         folders={categories}
-        cardName={fields.name || "Kart"}
+        cardName={fields.name || t("card.defaultCardName")}
       />
 
-      {/* Delete Confirm Dialog */}
+      {/* Silme Onay Diyaloğu */}
       <DeleteConfirmDialog
         visible={deleteDialogVisible}
         onClose={() => setDeleteDialogVisible(false)}
         onConfirm={handleConfirmDelete}
-        title="Kartı Sil?"
-        message="Bu işlem geri alınamaz."
+        title={t("card.deleteCardTitle")}
+        message={t("card.deleteCardMessage")}
         itemName={fields.name}
         showMoveOption={false}
       />
-    </View>
+
+      <CardShareSheet
+        visible={shareVisible}
+        onClose={() => setShareVisible(false)}
+        fields={fields}
+      />
+
+      <VoiceRecorder
+        visible={voiceRecVisible}
+        onClose={() => setVoiceRecVisible(false)}
+        onComplete={handleVoiceComplete}
+        userId={userId}
+        transcribe
+      />
+    </ScreenContainer>
   );
 }
 
-// 🎨 Stiller
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.background,
-  },
-  text: {
-    color: colors.text,
-  },
-  
-  // 🔧 FIXED HEADER
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 16,
-    backgroundColor: colors.background,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "flex-start",
-  },
-  headerTitle: {
-    flex: 1,
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "600",
-    textAlign: "center",
-    marginHorizontal: 8,
-  },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 50,
-  },
-  
-  // ⚠️ Uyarı Banner
-  warningBanner: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    backgroundColor: "#FF950020",
-    borderColor: "#FF9500",
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    gap: 10,
-  },
-  warningText: {
-    flex: 1,
-    color: "#FF9500",
-    fontSize: 14,
-    fontWeight: "500",
-    lineHeight: 20,
-  },
-  
-  // 📁 Kategori Badge
-  categoryBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surface || "#1e1e1e",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border || "#2C2C2E",
-  },
-  categoryIcon: {
-    fontSize: 20,
-    marginRight: 8,
-  },
-  categoryText: {
-    flex: 1,
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  
-  card: {
-    backgroundColor: colors.surface || "#1e1e1e",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: colors.border || "#2C2C2E",
-  },
-  label: {
-    color: colors.primary,
-    fontWeight: "600",
-    fontSize: 15,
-    marginTop: 6,
-  },
-  value: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "500",
-  },
-  input: {
-    backgroundColor: colors.surface || "#1e1e1e",
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "500",
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.primary + "50",
-    marginTop: 4,
-  },
-  editBanner: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: colors.primary + "20",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.primary + "50",
-  },
-  editBannerText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  editBannerCancel: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  menuOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  menuContainer: {
-    backgroundColor: colors.cardBackground || "#1C1C1E",
-    borderRadius: 12,
-    minWidth: 200,
-    overflow: "hidden",
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    gap: 12,
-  },
-  menuItemText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.text,
-  },
-  menuItemDanger: {
-    color: "#EF4444",
-  },
-  menuDivider: {
-    height: 1,
-    backgroundColor: colors.border || "#2C2C2E",
-    marginHorizontal: 16,
-  },
-  voiceBox: {
-    padding: 16,
-    backgroundColor: colors.surface || "#1e1e1e",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border || "#2C2C2E",
-    marginBottom: 20,
-  },
-  voiceTitle: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  playButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  playText: {
-    color: colors.text,
-    marginLeft: 8,
-    fontSize: 15,
-  },
-  transcriptBox: {
-    backgroundColor: "#00000040",
-    borderRadius: 8,
-    padding: 10,
-  },
-  transcriptText: {
-    color: colors.text,
-    fontStyle: "italic",
-  },
-  noVoice: {
-    color: "#888",
-    fontStyle: "italic",
-  },
-  
-  // Aksiyonlar
-  actionsContainer: {
-    gap: 12,
-  },
-  newCardButton: {
-    backgroundColor: colors.primary,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 12,
-    paddingVertical: 14,
-    gap: 8,
-  },
-  newCardText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  deleteButton: {
-    backgroundColor: colors.surface || "#1e1e1e",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 12,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: "#FF3B30",
-    gap: 8,
-  },
-  deleteText: {
-    color: "#FF3B30",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  
-  // Meta Bilgiler
-  metaBox: {
-    marginTop: 20,
-    padding: 12,
-    backgroundColor: colors.surface || "#1e1e1e",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border || "#2C2C2E",
-  },
-  metaText: {
-    color: colors.secondaryText,
-    fontSize: 13,
-    marginBottom: 4,
-  },
-});
+const createStyles = (colors, spacing, radius) =>
+  StyleSheet.create({
+    // Başlık
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.lg,
+    },
+    headerTitle: {
+      flex: 1,
+      textAlign: "center",
+      marginHorizontal: spacing.sm,
+    },
+    headerRight: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+    },
+    iconButton: {
+      width: 44,
+      height: 44,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: spacing.xl,
+      paddingBottom: spacing.xxxxl,
+    },
+
+    // Uyarı bandı
+    warningBanner: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      backgroundColor: colors.warningSurface,
+      borderColor: colors.warning,
+      borderWidth: 1,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      marginBottom: spacing.lg,
+      gap: spacing.sm,
+    },
+    warningText: {
+      flex: 1,
+      lineHeight: 20,
+    },
+
+    // Düzenleme bandı
+    editBanner: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      backgroundColor: colors.primaryMuted,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    editBannerLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+
+    // Kategori satırı
+    categoryBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surface,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      marginBottom: spacing.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      minHeight: 48,
+    },
+    categoryIcon: {
+      fontSize: 20,
+      marginRight: spacing.sm,
+    },
+    categoryText: {
+      flex: 1,
+    },
+
+    // Bilgi satırı
+    infoRow: {
+      marginBottom: spacing.lg,
+    },
+    labelRow: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    input: {
+      backgroundColor: colors.surfaceAlt,
+      color: colors.text,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginTop: spacing.xs,
+    },
+
+    // Ses notu
+    voiceTitleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: spacing.sm,
+    },
+    playButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: spacing.sm,
+    },
+    transcriptBox: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: radius.sm,
+      padding: spacing.md,
+      marginTop: spacing.sm,
+    },
+    voiceActions: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+
+    // Meta
+    metaBox: {
+      marginTop: spacing.xl,
+      padding: spacing.md,
+      backgroundColor: colors.surface,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+
+    // Menü satırı
+    sheetRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: spacing.lg,
+    },
+  });

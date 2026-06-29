@@ -1,68 +1,62 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
+import React, { useEffect } from "react";
+import { View, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { Icon } from "../components/ui";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { useTheme } from "../utils/theme";
 
 export default function SplashScreen() {
   const navigation = useNavigation();
-  const [status, setStatus] = useState("Yükleniyor...");
+  const { colors, radius } = useTheme();
 
   useEffect(() => {
-    checkAuthStatus();
+    let unsubscribe;
+    (async () => {
+      // İlk açılış → onboarding
+      try {
+        const seen = await AsyncStorage.getItem("onboarding_seen");
+        if (!seen) {
+          navigation.replace("Onboarding");
+          return;
+        }
+      } catch (e) {
+        // sessiz geç
+      }
+      // Oturum kontrolü
+      unsubscribe = onAuthStateChanged(getAuth(), (user) => {
+        navigation.replace(user ? "Main" : "Login");
+      });
+    })();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
-  const checkAuthStatus = () => {
-    const auth = getAuth();
-
-    // Listen for auth state changes
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // User is signed in
-        setStatus("Giriş mevcut! Yönlendiriliyor...");
-        setTimeout(() => {
-          navigation.replace("Main");
-        }, 500);
-      } else {
-        // No user is signed in
-        setStatus("Giriş gerekli...");
-        setTimeout(() => {
-          navigation.replace("Login");
-        }, 800);
-      }
-    });
-
-    // Cleanup subscription
-    return () => unsubscribe();
-  };
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Hybrid Card App</Text>
-      <ActivityIndicator color="#7B61FF" size="large" style={styles.loader} />
-      <Text style={styles.subtitle}>{status}</Text>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colors.bg,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <View
+        style={{
+          width: 88,
+          height: 88,
+          borderRadius: radius.pill,
+          backgroundColor: colors.primaryMuted,
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 28,
+        }}
+      >
+        <Icon name="scan-outline" size={40} color={colors.primary} />
+      </View>
+      <ActivityIndicator color={colors.primary} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: { 
-    color: "#fff", 
-    fontSize: 24, 
-    fontWeight: "600",
-    marginBottom: 20,
-  },
-  loader: {
-    marginVertical: 20,
-  },
-  subtitle: { 
-    color: "#bbb", 
-    marginTop: 10,
-    fontSize: 14,
-  },
-});

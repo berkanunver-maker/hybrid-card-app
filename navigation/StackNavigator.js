@@ -3,12 +3,15 @@ import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import TabNavigator from "./TabNavigator";
 import { Header } from "../components";
+import { useTranslation } from "../i18n/I18nProvider";
 
 // 📄 Ekranlar
 import SplashScreen from "../screens/SplashScreen";
+import OnboardingScreen from "../screens/OnboardingScreen";
 import LoginScreen from "../screens/LoginScreen";
 import ProfileSetupScreen from "../screens/ProfileSetupScreen";
 import CameraScreen from "../screens/CameraScreen";
+import AddContactScreen from "../screens/AddContactScreen";
 import QADetailScreen from "../screens/QADetailScreen";
 import DocumentScreen from "../screens/DocumentScreen";
 import VisionScreen from "../screens/VisionScreen";
@@ -39,6 +42,7 @@ import SettingsScreen from "../screens/SettingsScreen";
 const Stack = createStackNavigator();
 
 export default function StackNavigator() {
+  const { t } = useTranslation();
   return (
     <Stack.Navigator
       initialRouteName="Splash"
@@ -55,6 +59,13 @@ export default function StackNavigator() {
       <Stack.Screen
         name="Splash"
         component={SplashScreen}
+        options={{ headerShown: false }}
+      />
+
+      {/* 👋 Onboarding (ilk açılış) */}
+      <Stack.Screen
+        name="Onboarding"
+        component={OnboardingScreen}
         options={{ headerShown: false }}
       />
 
@@ -107,6 +118,13 @@ export default function StackNavigator() {
         options={{ headerShown: false }}
       />
 
+      {/* ✍️ Elle Kişi Ekle */}
+      <Stack.Screen
+        name="AddContact"
+        component={AddContactScreen}
+        options={{ headerShown: false }}
+      />
+
       {/* 🆕 Klasör İçeriği */}
       <Stack.Screen
         name="Folder"
@@ -132,7 +150,7 @@ export default function StackNavigator() {
       <Stack.Screen
         name="QADetail"
         component={QADetailScreen}
-        options={{ title: "Analiz Detayı" }}
+        options={{ title: t("ui.titleQADetail") }}
       />
 
       {/* 📄 Document AI */}
@@ -160,14 +178,14 @@ export default function StackNavigator() {
       <Stack.Screen
         name="CardHolder"
         component={CardHolderScreen}
-        options={{ title: "Kart Arşivi" }}
+        options={{ title: t("ui.titleCardHolder") }}
       />
 
       {/* 🧾 QA Sonuç */}
       <Stack.Screen
         name="QAResult"
         component={QAResultScreen}
-        options={{ title: "QA Sonuçları" }}
+        options={{ title: t("ui.titleQAResult") }}
       />
 
       {/* 📊 İstatistikler */}
@@ -181,35 +199,35 @@ export default function StackNavigator() {
       <Stack.Screen
         name="Tools"
         component={ToolsScreen}
-        options={{ title: "Araçlar" }}
+        options={{ title: t("ui.titleTools") }}
       />
 
       {/* 👁️ QA Önizleme */}
       <Stack.Screen
         name="QAPreview"
         component={QAPreviewScreen}
-        options={{ title: "QA Önizleme" }}
+        options={{ title: t("ui.titleQAPreview") }}
       />
 
       {/* 🎪 Fuar Seçimi */}
       <Stack.Screen
         name="FairSelect"
         component={FairSelectScreen}
-        options={{ title: "Fuar Seçin" }}
+        options={{ title: t("ui.titleFairSelect") }}
       />
 
       {/* 📁 Kategori Seçimi */}
       <Stack.Screen
         name="SelectCategory"
         component={SelectCategoryModal}
-        options={{ title: "Kategori Seçin" }}
+        options={{ title: t("ui.titleSelectCategory") }}
       />
 
       {/* ⚙️ Ayarlar */}
       <Stack.Screen
         name="Settings"
         component={SettingsScreen}
-        options={{ title: "Ayarlar" }}
+        options={{ title: t("ui.titleSettings") }}
       />
     </Stack.Navigator>
   );

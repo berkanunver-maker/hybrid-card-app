@@ -1,119 +1,83 @@
-import React from "react";
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-} from "react-native";
-import { colors } from "../utils/colors";
-import CustomButton from "./CustomButton";
-
-const { width } = Dimensions.get("window");
+// components/FeedbackModal.js
+import React, { useMemo } from "react";
+import { View, StyleSheet } from "react-native";
+import { useTheme } from "../utils/theme";
+import { useTranslation } from "../i18n/I18nProvider";
+import { Dialog, AppText, Button } from "./ui";
 
 export default function FeedbackModal({
   visible = false,
-  title = "İşlem Tamamlandı",
+  title,
   message = "",
   primaryAction, // { text, onPress }
   secondaryAction, // { text, onPress }
   onClose,
 }) {
+  const { colors, spacing } = useTheme();
+  const { t } = useTranslation();
+  const styles = useMemo(() => createStyles(spacing), [spacing]);
+
+  const resolvedTitle = title ?? t("modals.actionCompleted");
+
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={styles.overlay}>
-        <View style={styles.modalBox}>
-          {/* Başlık */}
-          <Text style={styles.title}>{title}</Text>
+    <Dialog visible={visible} onClose={onClose}>
+      {/* Başlık */}
+      <AppText variant="heading" style={styles.title}>
+        {resolvedTitle}
+      </AppText>
 
-          {/* Mesaj */}
-          {message ? <Text style={styles.message}>{message}</Text> : null}
+      {/* Mesaj */}
+      {message ? (
+        <AppText variant="body" color="textSecondary" style={styles.message}>
+          {message}
+        </AppText>
+      ) : null}
 
-          {/* Butonlar */}
-          <View style={styles.buttons}>
-            {secondaryAction ? (
-              <CustomButton
-                title={secondaryAction.text}
-                type="outline"
-                onPress={secondaryAction.onPress}
-                style={{ flex: 1, marginRight: 8 }}
-              />
-            ) : null}
+      {/* Butonlar */}
+      {primaryAction || secondaryAction ? (
+        <View style={styles.buttons}>
+          {secondaryAction ? (
+            <Button
+              title={secondaryAction.text}
+              variant="secondary"
+              onPress={secondaryAction.onPress}
+              style={styles.btnLeft}
+            />
+          ) : null}
 
-            {primaryAction ? (
-              <CustomButton
-                title={primaryAction.text}
-                onPress={primaryAction.onPress}
-                style={{ flex: 1 }}
-              />
-            ) : null}
-          </View>
-
-          {/* Kapat */}
-          {!primaryAction && !secondaryAction ? (
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Text style={styles.closeText}>Kapat</Text>
-            </TouchableOpacity>
+          {primaryAction ? (
+            <Button
+              title={primaryAction.text}
+              onPress={primaryAction.onPress}
+              style={styles.btnRight}
+            />
           ) : null}
         </View>
-      </View>
-    </Modal>
+      ) : null}
+
+      {/* Kapat */}
+      {!primaryAction && !secondaryAction ? (
+        <Button
+          title={t("modals.close")}
+          variant="ghost"
+          onPress={onClose}
+          style={{ marginTop: spacing.md }}
+        />
+      ) : null}
+    </Dialog>
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  modalBox: {
-    width: width * 0.85,
-    backgroundColor: colors.surface,
-    borderRadius: 18,
-    paddingVertical: 24,
-    paddingHorizontal: 20,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: colors.text,
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  message: {
-    fontSize: 15,
-    color: colors.textMuted,
-    textAlign: "center",
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  buttons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-  },
-  closeButton: {
-    marginTop: 12,
-    paddingVertical: 8,
-  },
-  closeText: {
-    color: colors.primary,
-    fontWeight: "600",
-    fontSize: 15,
-  },
-});
+const createStyles = (spacing) =>
+  StyleSheet.create({
+    title: { textAlign: "center", marginBottom: spacing.sm },
+    message: { textAlign: "center", marginBottom: spacing.lg },
+    buttons: {
+      flexDirection: "row",
+      alignItems: "center",
+      width: "100%",
+      gap: spacing.md,
+    },
+    btnLeft: { flex: 1 },
+    btnRight: { flex: 1 },
+  });

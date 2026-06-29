@@ -40,11 +40,29 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Kartvizit görsellerini seçmek için galeri erişimi gerekir.",
+          "cameraPermission": "Kartvizit taramak için kamera erişimi gerekir."
+        }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Kartları telefon rehberinize kaydetmek için kişiler erişimi gerekir."
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": false
+    },
+    "extra": {
+      "eas": {
+        "projectId": "76e59f8c-35f8-4600-b934-f9ce99affa4f"
+      }
     }
   }
 }

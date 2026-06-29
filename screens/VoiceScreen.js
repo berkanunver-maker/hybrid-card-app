@@ -1,18 +1,28 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-} from "react-native";
+// screens/VoiceScreen.js
+import React, { useState, useEffect, useMemo } from "react";
+import { View, Pressable, ScrollView, StyleSheet } from "react-native";
 import { Audio } from "expo-av";
 import { useTheme } from "../utils/theme";
-import { analyzeVoice } from "../services/voiceService";
-import { Loader, FeedbackModal, CustomButton } from "../components";
+import { useTranslation } from "../i18n/I18nProvider";
+import voiceService from "../services/voiceService";
+import { FeedbackModal } from "../components";
+import {
+  ScreenContainer,
+  AppText,
+  Button,
+  Loader,
+  SectionHeader,
+  Icon,
+} from "../components/ui";
 
 export default function VoiceScreen() {
-  const { colors } = useTheme();
+  const { colors, spacing, radius } = useTheme();
+  const { t } = useTranslation();
+  const styles = useMemo(
+    () => createStyles(colors, spacing, radius),
+    [colors, spacing, radius]
+  );
+
   const [recording, setRecording] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordedUri, setRecordedUri] = useState(null);
@@ -20,17 +30,17 @@ export default function VoiceScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [result, setResult] = useState(null);
 
-  // 🎙️ Ses izni kontrolü
+  // Ses izni kontrolü
   useEffect(() => {
     (async () => {
       const permission = await Audio.requestPermissionsAsync();
       if (!permission.granted) {
-        alert("Mikrofon izni gerekiyor.");
+        alert(t("tools.micPermission"));
       }
     })();
   }, []);
 
-  // 🔴 Kaydı başlat
+  // Kaydı başlat
   const startRecording = async () => {
     try {
       setIsRecording(true);
@@ -43,12 +53,11 @@ export default function VoiceScreen() {
       );
       setRecording(recording);
     } catch (err) {
-      console.error("Recording start error:", err);
       setIsRecording(false);
     }
   };
 
-  // ⏹ Kaydı durdur
+  // Kaydı durdur
   const stopRecording = async () => {
     try {
       setIsRecording(false);
@@ -57,25 +66,24 @@ export default function VoiceScreen() {
       setRecordedUri(uri);
       setRecording(null);
     } catch (err) {
-      console.error("Recording stop error:", err);
+      // kayıt durdurulurken oluşan hatayı yut
     }
   };
 
-  // 🧠 Ses analizi
+  // Ses analizi
   const handleAnalyze = async () => {
     if (!recordedUri) {
-      alert("Önce bir ses kaydı yapın.");
+      alert(t("tools.voiceRecordFirstAlert"));
       return;
     }
 
     try {
       setLoading(true);
-      const response = await analyzeVoice(recordedUri);
-      setResult(response || "Sonuç alınamadı.");
+      const response = await voiceService.transcribeAudio(recordedUri);
+      setResult(response || t("tools.noResult"));
       setModalVisible(true);
     } catch (error) {
-      console.error("❌ Voice analyze error:", error);
-      setResult("Ses analizi başarısız oldu.");
+      setResult(t("tools.voiceError"));
       setModalVisible(true);
     } finally {
       setLoading(false);
@@ -83,74 +91,97 @@ export default function VoiceScreen() {
   };
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ paddingBottom: 40 }}
-    >
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.text }]}>
-          Voice to Text (Speech-to-Text)
-        </Text>
-        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-          Konuşmanızı kaydedin, AI onu metne dönüştürsün.
-        </Text>
+    <ScreenContainer>
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.lg, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <AppText variant="title">{t("tools.voiceTitle")}</AppText>
+        <AppText
+          variant="body"
+          color="textSecondary"
+          style={{ marginTop: spacing.xs, marginBottom: spacing.xl }}
+        >
+          {t("tools.voiceSubtitle")}
+        </AppText>
 
-        <TouchableOpacity
-          style={[
+        <SectionHeader title={t("tools.recordingSection")} />
+
+        <Pressable
+          style={({ pressed }) => [
             styles.recordButton,
-            {
-              backgroundColor: isRecording ? colors.error : colors.primary,
-            },
+            { backgroundColor: isRecording ? colors.danger : colors.primary },
+            pressed && { opacity: 0.92 },
           ]}
           onPress={isRecording ? stopRecording : startRecording}
+          accessibilityRole="button"
+          accessibilityState={{ selected: isRecording }}
+          accessibilityLabel={isRecording ? "Kaydı durdur" : "Kaydı başlat"}
         >
-          <Text style={{ color: colors.white, fontWeight: "700" }}>
-            {isRecording ? "Kaydı Durdur" : "Kaydı Başlat"}
-          </Text>
-        </TouchableOpacity>
+          <Icon
+            name={isRecording ? "stop-circle" : "mic"}
+            size={20}
+            color={colors.onPrimary}
+          />
+          <AppText variant="bodyStrong" style={{ color: colors.onPrimary }}>
+            {isRecording ? t("tools.stopRecording") : t("tools.startRecording")}
+          </AppText>
+        </Pressable>
 
         {recordedUri && (
-          <Text style={{ color: colors.text, marginTop: 10, textAlign: "center" }}>
-            🎧 Kayıt tamamlandı, analiz edebilirsiniz.
-          </Text>
+          <View style={styles.statusRow}>
+            <Icon name="checkmark-circle" size={18} color={colors.success} />
+            <AppText variant="body" color="textSecondary">
+              {t("tools.recordingComplete")}
+            </AppText>
+          </View>
         )}
 
-        <CustomButton
-          title="Analiz Et"
+        <Button
+          title={t("tools.analyze")}
+          icon="sparkles-outline"
           onPress={handleAnalyze}
           disabled={!recordedUri}
-          style={{ marginTop: 20 }}
+          loading={loading}
+          style={{ marginTop: spacing.xl }}
         />
-      </View>
+      </ScrollView>
 
       {/* Loader */}
-      <Loader visible={loading} text="Ses analiz ediliyor..." />
+      <Loader visible={loading} text={t("tools.voiceLoading")} />
 
       {/* Feedback Modal */}
       <FeedbackModal
         visible={modalVisible}
-        title="Analiz Sonucu"
+        title={t("tools.analysisResult")}
         message={
           typeof result === "string" ? result : JSON.stringify(result, null, 2)
         }
         primaryAction={{
-          text: "Kapat",
+          text: t("tools.close"),
           onPress: () => setModalVisible(false),
         }}
         onClose={() => setModalVisible(false)}
       />
-    </ScrollView>
+    </ScreenContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 20 },
-  title: { fontSize: 20, fontWeight: "700", marginBottom: 8 },
-  subtitle: { fontSize: 14, marginBottom: 20, lineHeight: 20 },
-  recordButton: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-});
+const createStyles = (colors, spacing, radius) =>
+  StyleSheet.create({
+    recordButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.sm,
+      borderRadius: radius.md,
+      height: 52,
+    },
+    statusRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.sm,
+      marginTop: spacing.md,
+    },
+  });

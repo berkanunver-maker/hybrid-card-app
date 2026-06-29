@@ -1,29 +1,28 @@
 // components/CreateFolderModal.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
-  Text,
-  StyleSheet,
-  Modal,
-  TouchableOpacity,
-  TextInput,
+  Pressable,
   ScrollView,
   Alert,
-  ActivityIndicator,
+  StyleSheet,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../utils/colors";
+import Icon from "./ui/Icon";
+import { useTheme } from "../utils/theme";
+import { useTranslation } from "../i18n/I18nProvider";
+import { FOLDER_ICONS } from "../utils/constants";
 import { FirestoreService } from "../services/firestoreService";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-
-const FOLDER_ICONS = [
-  "📁", "💼", "🏢", "🏍️", "🚗", "✈️", 
-  "🏠", "🎓", "💻", "📱", "🎨", "🎮",
-  "⚽", "🎵", "📚", "🍕", "☕", "🛍️",
-  "💡", "🔧", "⚙️", "🎯", "🌟", "❤️"
-];
+import { BottomSheet, AppText, Input, Button } from "./ui";
 
 export default function CreateFolderModal({ visible, onClose, onFolderCreated }) {
+  const { colors, spacing, radius } = useTheme();
+  const { t } = useTranslation();
+  const styles = useMemo(
+    () => createStyles(colors, spacing, radius),
+    [colors, spacing, radius]
+  );
+
   const [folderName, setFolderName] = useState("");
   const [selectedIcon, setSelectedIcon] = useState("📁");
   const [loading, setLoading] = useState(false);
@@ -34,7 +33,6 @@ export default function CreateFolderModal({ visible, onClose, onFolderCreated })
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        console.log("✅ CreateFolderModal - User:", user.uid);
         setUserId(user.uid);
       } else {
         setUserId(null);
@@ -45,12 +43,12 @@ export default function CreateFolderModal({ visible, onClose, onFolderCreated })
 
   const handleCreateFolder = async () => {
     if (!folderName.trim()) {
-      Alert.alert("Hata", "Lütfen klasör adı girin.");
+      Alert.alert(t("common.error"), t("modals.enterFolderName"));
       return;
     }
 
     if (!userId) {
-      Alert.alert("Hata", "Kullanıcı girişi gerekli.");
+      Alert.alert(t("common.error"), t("modals.loginRequired"));
       return;
     }
 
@@ -64,17 +62,16 @@ export default function CreateFolderModal({ visible, onClose, onFolderCreated })
       };
 
       await FirestoreService.addCategory(userId, newCategory);
-      Alert.alert("Başarılı", `"${folderName}" klasörü oluşturuldu!`);
-      
+      Alert.alert(t("common.success"), t("modals.folderCreatedNamed", { name: folderName }));
+
       setFolderName("");
       setSelectedIcon("📁");
-      
+
       if (onFolderCreated) {
         onFolderCreated();
       }
     } catch (error) {
-      console.error("❌ Klasör oluşturulamadı:", error);
-      Alert.alert("Hata", "Klasör oluşturulamadı: " + error.message);
+      Alert.alert(t("common.error"), t("modals.folderCreateError") + " " + error.message);
     } finally {
       setLoading(false);
     }
@@ -87,92 +84,149 @@ export default function CreateFolderModal({ visible, onClose, onFolderCreated })
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={handleClose}>
-      <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Yeni Klasör Oluştur</Text>
-            <TouchableOpacity onPress={handleClose}>
-              <Ionicons name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
+    <BottomSheet visible={visible} onClose={handleClose}>
+      <View style={styles.header}>
+        <AppText variant="title">{t("modals.createFolderTitle")}</AppText>
+        <Pressable
+          onPress={handleClose}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Kapat"
+          style={styles.closeBtn}
+        >
+          <Icon name="close" size={24} color={colors.text} />
+        </Pressable>
+      </View>
 
-          <View style={styles.section}>
-            <Text style={styles.label}>Klasör Adı</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Örn: İş Kartları, Arkadaşlar..."
-              placeholderTextColor={colors.secondaryText}
-              value={folderName}
-              onChangeText={setFolderName}
-              maxLength={30}
-              autoFocus
-            />
-          </View>
+      <Input
+        label={t("modals.folderNameLabel")}
+        placeholder={t("modals.folderNameExample")}
+        value={folderName}
+        onChangeText={setFolderName}
+        maxLength={30}
+        autoFocus
+      />
 
-          <View style={styles.section}>
-            <Text style={styles.label}>İkon Seç</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.iconScroll}>
-              {FOLDER_ICONS.map((icon, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[styles.iconButton, selectedIcon === icon && styles.iconButtonSelected]}
-                  onPress={() => setSelectedIcon(icon)}
-                >
-                  <Text style={styles.iconText}>{icon}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+      <AppText variant="label" color="textSecondary" style={styles.iconLabel}>
+        {t("modals.selectIcon")}
+      </AppText>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.iconScroll}
+      >
+        {FOLDER_ICONS.map((icon, index) => {
+          const selected = selectedIcon === icon;
+          return (
+            <Pressable
+              key={index}
+              style={[styles.iconButton, selected && styles.iconButtonSelected]}
+              onPress={() => setSelectedIcon(icon)}
+              accessibilityRole="button"
+              accessibilityLabel={`İkon ${icon}`}
+              accessibilityState={{ selected }}
+            >
+              <AppText style={styles.iconText}>{icon}</AppText>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
 
-          <View style={styles.preview}>
-            <Text style={styles.previewLabel}>Önizleme:</Text>
-            <View style={styles.previewCard}>
-              <Text style={styles.previewIcon}>{selectedIcon}</Text>
-              <View style={styles.previewInfo}>
-                <Text style={styles.previewName}>{folderName.trim() || "Klasör Adı"}</Text>
-                <Text style={styles.previewCount}>0 kart</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleClose} disabled={loading}>
-              <Text style={styles.cancelButtonText}>İptal</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.createButton]} onPress={handleCreateFolder} disabled={loading || !folderName.trim()}>
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.createButtonText}>Oluştur</Text>}
-            </TouchableOpacity>
+      <View style={styles.preview}>
+        <AppText variant="label" color="textSecondary" style={styles.previewLabel}>
+          {t("modals.preview")}
+        </AppText>
+        <View style={styles.previewCard}>
+          <AppText style={styles.previewIcon}>{selectedIcon}</AppText>
+          <View style={styles.previewInfo}>
+            <AppText variant="bodyStrong" numberOfLines={1}>
+              {folderName.trim() || t("modals.folderNameLabel")}
+            </AppText>
+            <AppText variant="caption" color="textSecondary" style={{ marginTop: 2 }}>
+              {t("modals.cardCount", { count: 0 })}
+            </AppText>
           </View>
         </View>
       </View>
-    </Modal>
+
+      <View style={styles.buttonContainer}>
+        <Button
+          title={t("common.cancel")}
+          variant="secondary"
+          onPress={handleClose}
+          disabled={loading}
+          style={styles.flexBtn}
+        />
+        <Button
+          title={t("modals.create")}
+          onPress={handleCreateFolder}
+          loading={loading}
+          disabled={loading || !folderName.trim()}
+          style={styles.flexBtn}
+        />
+      </View>
+    </BottomSheet>
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0, 0, 0, 0.7)", justifyContent: "flex-end" },
-  modalContainer: { backgroundColor: colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 40 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 },
-  title: { fontSize: 20, fontWeight: "700", color: colors.text },
-  section: { marginBottom: 24 },
-  label: { fontSize: 14, fontWeight: "600", color: colors.secondaryText, marginBottom: 8 },
-  input: { backgroundColor: colors.cardBackground || "#1C1C1E", color: colors.text, fontSize: 16, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.border || "#2C2C2E" },
-  iconScroll: { flexDirection: "row" },
-  iconButton: { width: 56, height: 56, justifyContent: "center", alignItems: "center", backgroundColor: colors.cardBackground || "#1C1C1E", borderRadius: 12, marginRight: 8, borderWidth: 2, borderColor: "transparent" },
-  iconButtonSelected: { borderColor: colors.primary, backgroundColor: colors.primary + "20" },
-  iconText: { fontSize: 28 },
-  preview: { marginBottom: 24 },
-  previewLabel: { fontSize: 14, fontWeight: "600", color: colors.secondaryText, marginBottom: 8 },
-  previewCard: { flexDirection: "row", alignItems: "center", backgroundColor: colors.cardBackground || "#1C1C1E", padding: 16, borderRadius: 12 },
-  previewIcon: { fontSize: 32, marginRight: 12 },
-  previewInfo: { flex: 1 },
-  previewName: { fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 4 },
-  previewCount: { fontSize: 12, color: colors.secondaryText },
-  buttonContainer: { flexDirection: "row", gap: 12 },
-  button: { flex: 1, padding: 16, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  cancelButton: { backgroundColor: colors.cardBackground || "#1C1C1E" },
-  cancelButtonText: { fontSize: 16, fontWeight: "600", color: colors.text },
-  createButton: { backgroundColor: colors.primary },
-  createButtonText: { fontSize: 16, fontWeight: "700", color: "#fff" },
-});
+const createStyles = (colors, spacing, radius) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: spacing.xxl,
+    },
+    closeBtn: {
+      width: 44,
+      height: 44,
+      alignItems: "flex-end",
+      justifyContent: "center",
+    },
+    iconLabel: {
+      marginBottom: spacing.md,
+    },
+    iconScroll: {
+      paddingRight: spacing.sm,
+      gap: spacing.sm,
+      marginBottom: spacing.xxl,
+    },
+    iconButton: {
+      width: 56,
+      height: 56,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      borderWidth: 2,
+      borderColor: colors.border,
+    },
+    iconButtonSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primaryMuted,
+    },
+    iconText: { fontSize: 28 },
+    preview: {
+      marginTop: spacing.xxl,
+      marginBottom: spacing.xxl,
+    },
+    previewLabel: {
+      marginBottom: spacing.sm,
+    },
+    previewCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.lg,
+      borderRadius: radius.md,
+    },
+    previewIcon: { fontSize: 32, marginRight: spacing.md },
+    previewInfo: { flex: 1 },
+    buttonContainer: {
+      flexDirection: "row",
+      gap: spacing.md,
+    },
+    flexBtn: { flex: 1 },
+  });

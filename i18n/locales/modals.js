@@ -1,0 +1,106 @@
+export default {
+  tr: {
+    // Ortak
+    "modals.warning": "Uyarı",
+    "modals.cardCount": "{count} kart",
+    "modals.selectIcon": "İkon Seç",
+    "modals.preview": "Önizleme",
+    "modals.create": "Oluştur",
+    "modals.update": "Güncelle",
+    "modals.move": "Taşı",
+    "modals.close": "Kapat",
+    "modals.default": "Varsayılan",
+    // Klasör adı / form
+    "modals.folderNameLabel": "Klasör Adı",
+    "modals.folderNamePlaceholder": "Klasör Adı",
+    "modals.folderNameExample": "Örn: İş Kartları, Arkadaşlar...",
+    // SelectCategoryModal
+    "modals.selectFolderTitle": "Klasör Seç",
+    "modals.createFolderTitle": "Yeni Klasör Oluştur",
+    "modals.categoriesLoadError": "Kategoriler yüklenemedi.",
+    "modals.enterCategoryName": "Lütfen kategori adı girin.",
+    "modals.folderCreated": "Yeni klasör oluşturuldu!",
+    "modals.categoryCreateError": "Kategori oluşturulamadı.",
+    "modals.selectFolder": "Lütfen bir klasör seçin.",
+    "modals.cardSaveError": "Kart kaydedilemedi.",
+    // CreateFolderModal
+    "modals.enterFolderName": "Lütfen klasör adı girin.",
+    "modals.loginRequired": "Kullanıcı girişi gerekli.",
+    "modals.folderCreatedNamed": "\"{name}\" klasörü oluşturuldu!",
+    "modals.folderCreateError": "Klasör oluşturulamadı:",
+    // EditFolderModal
+    "modals.editFolderTitle": "Klasörü Düzenle",
+    "modals.folderInfoMissing": "Klasör bilgisi eksik.",
+    "modals.defaultFolderLocked": "Varsayılan klasörün adı ve ikonu değiştirilemez.",
+    "modals.folderUpdatedNamed": "\"{name}\" klasörü güncellendi!",
+    "modals.folderUpdateError": "Klasör güncellenemedi:",
+    // MoveCardModal
+    "modals.currentFolder": "ŞU ANKİ KLASÖR",
+    "modals.targetFolder": "TAŞINACAK KLASÖR",
+    "modals.noOtherFolders": "Başka klasör yok",
+    // DeleteConfirmDialog
+    "modals.deleteConfirmTitle": "Silme Onayı",
+    "modals.deleteConfirmMessage": "Bu işlemi geri alamazsınız.",
+    "modals.folderCardCountInfoPre": "Bu klasörde",
+    "modals.folderCardCountInfoPost": "bulunuyor.",
+    "modals.whatAboutCards": "Kartlar ne olsun?",
+    "modals.moveCardsToGeneral": "Kartları \"Genel\" klasörüne taşı",
+    "modals.moveCardsDescription": "Kartlar korunur, sadece klasör silinir",
+    "modals.deleteWithCards": "Kartlarla birlikte sil",
+    "modals.deleteWithCardsDescription": "Tüm kartlar kalıcı olarak silinir",
+    // FeedbackModal
+    "modals.actionCompleted": "İşlem Tamamlandı",
+  },
+  en: {
+    // Common
+    "modals.warning": "Warning",
+    "modals.cardCount": "{count} cards",
+    "modals.selectIcon": "Choose Icon",
+    "modals.preview": "Preview",
+    "modals.create": "Create",
+    "modals.update": "Update",
+    "modals.move": "Move",
+    "modals.close": "Close",
+    "modals.default": "Default",
+    // Folder name / form
+    "modals.folderNameLabel": "Folder Name",
+    "modals.folderNamePlaceholder": "Folder Name",
+    "modals.folderNameExample": "e.g. Work Cards, Friends...",
+    // SelectCategoryModal
+    "modals.selectFolderTitle": "Choose Folder",
+    "modals.createFolderTitle": "Create New Folder",
+    "modals.categoriesLoadError": "Could not load categories.",
+    "modals.enterCategoryName": "Please enter a category name.",
+    "modals.folderCreated": "New folder created!",
+    "modals.categoryCreateError": "Could not create category.",
+    "modals.selectFolder": "Please select a folder.",
+    "modals.cardSaveError": "Could not save card.",
+    // CreateFolderModal
+    "modals.enterFolderName": "Please enter a folder name.",
+    "modals.loginRequired": "You need to be signed in.",
+    "modals.folderCreatedNamed": "Folder \"{name}\" created!",
+    "modals.folderCreateError": "Could not create folder:",
+    // EditFolderModal
+    "modals.editFolderTitle": "Edit Folder",
+    "modals.folderInfoMissing": "Folder information is missing.",
+    "modals.defaultFolderLocked": "The name and icon of the default folder cannot be changed.",
+    "modals.folderUpdatedNamed": "Folder \"{name}\" updated!",
+    "modals.folderUpdateError": "Could not update folder:",
+    // MoveCardModal
+    "modals.currentFolder": "CURRENT FOLDER",
+    "modals.targetFolder": "DESTINATION FOLDER",
+    "modals.noOtherFolders": "No other folders",
+    // DeleteConfirmDialog
+    "modals.deleteConfirmTitle": "Confirm Deletion",
+    "modals.deleteConfirmMessage": "This action cannot be undone.",
+    "modals.folderCardCountInfoPre": "This folder contains",
+    "modals.folderCardCountInfoPost": ".",
+    "modals.whatAboutCards": "What about the cards?",
+    "modals.moveCardsToGeneral": "Move cards to the \"General\" folder",
+    "modals.moveCardsDescription": "Cards are kept, only the folder is deleted",
+    "modals.deleteWithCards": "Delete along with cards",
+    "modals.deleteWithCardsDescription": "All cards will be permanently deleted",
+    // FeedbackModal
+    "modals.actionCompleted": "Done",
+  },
+};

@@ -1,48 +1,35 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../utils/theme";
+import { useTranslation } from "../i18n/I18nProvider";
+import { ScreenContainer, AppText, EmptyState, Button } from "../components/ui";
 
 export default function QAResultScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation();
+  const { spacing } = useTheme();
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>QA Result Screen</Text>
-      <Text style={styles.subtitle}>
-        Bu ekran test için oluşturuldu. OCR analizi sonuç özeti burada
-        gösterilecek.
-      </Text>
+    <ScreenContainer padded>
+      <View style={{ marginTop: spacing.lg }}>
+        <AppText variant="title">{t("misc.qaResultTitle")}</AppText>
+      </View>
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate("Home")}
-      >
-        <Text style={styles.buttonText}>Ana Sayfaya Dön</Text>
-      </TouchableOpacity>
-    </View>
+      <EmptyState
+        icon="checkmark-done-outline"
+        title={t("misc.qaResultSoon")}
+        description={t("misc.qaResultSoonDesc")}
+      />
+
+      <View style={{ marginTop: spacing.md }}>
+        <Button
+          title={t("misc.backToHome")}
+          icon="home-outline"
+          variant="secondary"
+          onPress={() => navigation.navigate("Home")}
+        />
+      </View>
+    </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-  },
-  title: { color: "#fff", fontSize: 22, fontWeight: "600" },
-  subtitle: {
-    color: "#bbb",
-    marginVertical: 10,
-    textAlign: "center",
-  },
-  button: {
-    marginTop: 20,
-    backgroundColor: "#7B61FF",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-  },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "500" },
-});

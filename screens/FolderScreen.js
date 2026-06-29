@@ -1,27 +1,42 @@
 // screens/FolderScreen.js
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
+  Pressable,
   RefreshControl,
   Alert,
-  Modal,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
-import { colors } from "../utils/colors";
+import { useTheme } from "../utils/theme";
+import { useTranslation } from "../i18n/I18nProvider";
 import { FirestoreService } from "../services/firestoreService";
 import ExcelService from "../services/excelService";
 import { getAuth } from "firebase/auth";
+import {
+  ScreenContainer,
+  AppText,
+  ListRow,
+  EmptyState,
+  Button,
+  Loader,
+  BottomSheet,
+  Monogram,
+  Icon,
+} from "../components/ui";
 
 export default function FolderScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { category } = route.params; // { id, name, icon, color }
+
+  const { t } = useTranslation();
+  const { colors, spacing, radius } = useTheme();
+  const styles = useMemo(
+    () => createStyles(colors, spacing, radius),
+    [colors, spacing, radius]
+  );
 
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,8 +54,7 @@ export default function FolderScreen() {
       const fetchedCards = await FirestoreService.getCardsByCategory(category.id, userId);
       setCards(fetchedCards);
     } catch (error) {
-      console.error("❌ Kartlar yüklenemedi:", error);
-      Alert.alert("Hata", "Kartlar yüklenemedi.");
+      Alert.alert(t("common.error"), t("lists.loadCardsError"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -79,13 +93,13 @@ export default function FolderScreen() {
     navigation.navigate("Camera", { categoryId: category.id, categoryName: category.name });
   };
 
-  // 📊 Excel'e aktar (YENİ!)
+  // Excel'e aktar
   const handleExportToExcel = async () => {
     try {
       setMenuVisible(false);
 
       if (cards.length === 0) {
-        Alert.alert("Uyarı", "Bu klasörde aktarılacak kart bulunmuyor.");
+        Alert.alert(t("lists.warning"), t("lists.exportEmptyFolder"));
         return;
       }
 
@@ -94,81 +108,78 @@ export default function FolderScreen() {
       // Excel oluştur ve paylaş
       await ExcelService.exportFolderToExcel(cards, category.name);
 
-      Alert.alert(
-        "Başarılı! 📊",
-        `${cards.length} kart Excel'e aktarıldı.`
-      );
+      Alert.alert(t("common.success"), t("lists.exportSuccess", { count: cards.length }));
 
       setExporting(false);
     } catch (error) {
-      console.error("❌ Excel export hatası:", error);
       setExporting(false);
-      Alert.alert(
-        "Hata",
-        "Excel dosyası oluşturulamadı. Lütfen tekrar deneyin."
-      );
+      Alert.alert(t("common.error"), t("lists.exportError"));
     }
   };
 
   // Kart render
-  const renderCard = ({ item }) => (
-    <TouchableOpacity style={styles.card} onPress={() => handleCardPress(item)}>
-      <View style={styles.cardLeft}>
-        <Text style={styles.cardIcon}>{category.icon}</Text>
-        <View style={styles.cardInfo}>
-          <Text style={styles.cardName} numberOfLines={1}>
-            {item.fields?.name || item.name || "İsimsiz"}
-          </Text>
-          <Text style={styles.cardCompany} numberOfLines={1}>
-            {item.fields?.company || item.company || "Şirket bilgisi yok"}
-          </Text>
-        </View>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color={colors.secondaryText} />
-    </TouchableOpacity>
-  );
+  const renderCard = ({ item }) => {
+    const name = item.fields?.name || item.name || t("lists.unnamed");
+    const companyRaw = item.fields?.company || item.company || "";
+    return (
+      <ListRow
+        onPress={() => handleCardPress(item)}
+        title={name}
+        subtitle={companyRaw || t("lists.noCompany")}
+        style={{ marginBottom: spacing.md }}
+        leading={<Monogram name={name} company={companyRaw} />}
+      />
+    );
+  };
 
   return (
-    <View style={styles.container}>
+    <ScreenContainer>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerIcon}>{category.icon}</Text>
-          <Text style={styles.headerTitle}>{category.name}</Text>
-        </View>
-        {/* Menü Butonu (YENİ!) */}
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => setMenuVisible(true)}
+        <Pressable
+          onPress={() => navigation.goBack()}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Geri"
+          style={styles.iconBtn}
         >
-          <Ionicons name="ellipsis-vertical" size={24} color={colors.text} />
-        </TouchableOpacity>
+          <Icon name="arrow-back" size={24} color={colors.text} />
+        </Pressable>
+        <View style={styles.headerCenter}>
+          <AppText style={{ fontSize: 22, marginRight: 8 }}>{category.icon}</AppText>
+          <AppText variant="title" numberOfLines={1}>
+            {category.name}
+          </AppText>
+        </View>
+        <Pressable
+          onPress={() => setMenuVisible(true)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Klasör menüsü"
+          style={styles.iconBtn}
+        >
+          <Icon name="ellipsis-vertical" size={24} color={colors.text} />
+        </Pressable>
       </View>
 
       {/* Kart Listesi */}
       {loading && !refreshing ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Kartlar yükleniyor...</Text>
-        </View>
+        <Loader visible text={t("lists.loadingCards")} />
       ) : cards.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>🔭</Text>
-          <Text style={styles.emptyText}>Bu klasörde henüz kart yok</Text>
-          <TouchableOpacity style={styles.addButton} onPress={handleAddCard}>
-            <Ionicons name="camera" size={20} color="#fff" />
-            <Text style={styles.addButtonText}>İlk Kartı Ekle</Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState
+          icon="search-outline"
+          title={t("lists.folderEmptyTitle")}
+          description={t("lists.folderEmptyDescription")}
+          actionLabel={t("lists.addFirstCard")}
+          onAction={handleAddCard}
+        />
       ) : (
         <FlatList
           data={cards}
           keyExtractor={(item) => item.id}
           renderItem={renderCard}
           contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -177,241 +188,137 @@ export default function FolderScreen() {
             />
           }
           ListHeaderComponent={
-            <Text style={styles.countText}>
-              {cards.length} kart
-            </Text>
+            <AppText
+              variant="caption"
+              color="textSecondary"
+              style={{ marginBottom: spacing.md }}
+            >
+              {t("lists.cardCount", { count: cards.length })}
+            </AppText>
           }
         />
       )}
 
       {/* Floating Ekle Butonu */}
       {cards.length > 0 && (
-        <TouchableOpacity style={styles.fab} onPress={handleAddCard}>
-          <Ionicons name="add" size={28} color="#fff" />
-        </TouchableOpacity>
+        <View style={styles.fabWrap} pointerEvents="box-none">
+          <Pressable
+            onPress={handleAddCard}
+            accessibilityRole="button"
+            accessibilityLabel="Kart ekle"
+            style={({ pressed }) => [styles.fab, { opacity: pressed ? 0.92 : 1 }]}
+          >
+            <Icon name="add" size={28} color={colors.onPrimary} />
+          </Pressable>
+        </View>
       )}
 
-      {/* Menü Modal (YENİ!) */}
-      <Modal
-        visible={menuVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setMenuVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.menuOverlay}
-          activeOpacity={1}
-          onPress={() => setMenuVisible(false)}
+      {/* Klasör menüsü */}
+      <BottomSheet visible={menuVisible} onClose={() => setMenuVisible(false)}>
+        <Pressable
+          style={styles.sheetRow}
+          onPress={handleExportToExcel}
+          disabled={exporting}
+          accessibilityRole="button"
+          accessibilityLabel="Excel'e Aktar"
         >
-          <View style={styles.menuContainer}>
-            {/* Excel'e Aktar */}
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={handleExportToExcel}
-              disabled={exporting}
-            >
-              {exporting ? (
-                <>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={styles.menuItemText}>Excel oluşturuluyor...</Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons name="document-text-outline" size={22} color={colors.primary} />
-                  <Text style={styles.menuItemText}>Excel'e Aktar</Text>
-                  {cards.length > 0 && (
-                    <Text style={styles.menuItemBadge}>{cards.length}</Text>
-                  )}
-                </>
-              )}
-            </TouchableOpacity>
+          <Icon name="document-text-outline" size={22} color={colors.primary} />
+          <AppText variant="bodyStrong" style={{ marginLeft: 12, flex: 1 }}>
+            {exporting ? t("lists.exporting") : t("lists.exportToExcel")}
+          </AppText>
+          {!exporting && cards.length > 0 ? (
+            <View style={styles.sheetBadge}>
+              <AppText variant="caption" style={{ color: colors.primary }}>
+                {cards.length}
+              </AppText>
+            </View>
+          ) : null}
+        </Pressable>
 
-            <View style={styles.menuDivider} />
+        <View style={styles.sheetDivider} />
 
-            {/* İptal */}
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => setMenuVisible(false)}
-            >
-              <Ionicons name="close-outline" size={22} color={colors.textSecondary} />
-              <Text style={[styles.menuItemText, { color: colors.textSecondary }]}>
-                İptal
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </View>
+        <Pressable
+          style={styles.sheetRow}
+          onPress={() => setMenuVisible(false)}
+          accessibilityRole="button"
+          accessibilityLabel="İptal"
+        >
+          <Icon name="close-outline" size={22} color={colors.textSecondary} />
+          <AppText variant="bodyStrong" color="textSecondary" style={{ marginLeft: 12 }}>
+            {t("common.cancel")}
+          </AppText>
+        </Pressable>
+      </BottomSheet>
+    </ScreenContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-    backgroundColor: colors.background,
-  },
-  headerCenter: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-  },
-  headerIcon: {
-    fontSize: 24,
-    marginRight: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: colors.text,
-  },
-  menuButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    color: colors.secondaryText,
-    marginTop: 12,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 40,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: colors.secondaryText,
-    textAlign: "center",
-    marginBottom: 24,
-  },
-  addButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 25,
-    gap: 8,
-  },
-  addButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 100,
-  },
-  countText: {
-    fontSize: 14,
-    color: colors.secondaryText,
-    marginBottom: 12,
-  },
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: colors.cardBackground || "#1C1C1E",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  cardLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  cardIcon: {
-    fontSize: 32,
-    marginRight: 12,
-  },
-  cardInfo: {
-    flex: 1,
-  },
-  cardName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.text,
-    marginBottom: 4,
-  },
-  cardCompany: {
-    fontSize: 14,
-    color: colors.secondaryText,
-  },
-  fab: {
-    position: "absolute",
-    bottom: 30,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  
-  // Menü stilleri (YENİ!)
-  menuOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  menuContainer: {
-    backgroundColor: colors.cardBackground || "#1C1C1E",
-    borderRadius: 12,
-    minWidth: 250,
-    overflow: "hidden",
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    gap: 12,
-  },
-  menuItemText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.text,
-    flex: 1,
-  },
-  menuItemBadge: {
-    backgroundColor: colors.primary + "30",
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: "700",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  menuDivider: {
-    height: 1,
-    backgroundColor: colors.border || "#2C2C2E",
-    marginHorizontal: 16,
-  },
-});
+const createStyles = (colors, spacing, radius) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    iconBtn: {
+      width: 44,
+      height: 44,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    headerCenter: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+      justifyContent: "center",
+      paddingHorizontal: 8,
+    },
+    cardAvatar: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surfaceAlt,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    listContent: {
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.sm,
+      paddingBottom: 100,
+    },
+    fabWrap: {
+      position: "absolute",
+      right: spacing.lg,
+      bottom: spacing.xl,
+    },
+    fab: {
+      width: 60,
+      height: 60,
+      borderRadius: radius.pill,
+      backgroundColor: colors.primary,
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 5,
+    },
+    sheetRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 16,
+    },
+    sheetBadge: {
+      backgroundColor: colors.primaryMuted,
+      paddingHorizontal: 9,
+      paddingVertical: 2,
+      borderRadius: radius.pill,
+    },
+    sheetDivider: {
+      height: 1,
+      backgroundColor: colors.border,
+    },
+  });

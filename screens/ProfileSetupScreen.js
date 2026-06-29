@@ -1,24 +1,44 @@
-import React, { useState } from "react";
+// screens/ProfileSetupScreen.js
+import React, { useState, useMemo } from "react";
 import {
   View,
-  Text,
   StyleSheet,
-  TextInput,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { getAuth } from "firebase/auth";
+import { useTheme } from "../utils/theme";
+import { FirestoreService } from "../services/firestoreService";
+import { useTranslation } from "../i18n/I18nProvider";
+import {
+  ScreenContainer,
+  AppText,
+  Input,
+  Button,
+} from "../components/ui";
 
 export default function ProfileSetupScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation();
+  const { spacing } = useTheme();
+  const styles = useMemo(() => createStyles(spacing), [spacing]);
 
   const [fullName, setFullName] = useState("");
   const [company, setCompany] = useState("");
   const [jobTitle, setJobTitle] = useState("");
 
-  const handleFinish = () => {
-    console.log("Profil:", { fullName, company, jobTitle });
+  const handleFinish = async () => {
+    // 🏢 Girilen şirket/ünvanı users/{uid} profiline kaydet (önceden atılıyordu)
+    const user = getAuth().currentUser;
+    if (user) {
+      await FirestoreService.ensureUserProfile(user, {
+        ...(fullName.trim() && { displayName: fullName.trim() }),
+        company: company.trim(),
+        jobTitle: jobTitle.trim(),
+      });
+    }
     navigation.replace("Main"); // ✅ replace: geri dönmeyi engeller
   };
 
@@ -26,121 +46,86 @@ export default function ProfileSetupScreen() {
     navigation.replace("Main");
   };
 
+  const isDisabled = !fullName || !company || !jobTitle;
+
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>Complete Your Digital Business Card</Text>
-        <TouchableOpacity onPress={handleSkip}>
-          <Text style={styles.skipButton}>Skip</Text>
-        </TouchableOpacity>
-      </View>
+    <ScreenContainer edges={["top", "bottom"]}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View style={styles.header}>
+          <AppText variant="heading" style={styles.headerTitle}>
+            {t("auth.profileSetupTitle")}
+          </AppText>
+          <Button
+            title={t("auth.skip")}
+            variant="ghost"
+            size="sm"
+            fullWidth={false}
+            onPress={handleSkip}
+          />
+        </View>
 
-      <View style={styles.content}>
-        <Text style={styles.label}>Full Name</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your name (required)"
-          placeholderTextColor="#666"
-          value={fullName}
-          onChangeText={setFullName}
-          autoCapitalize="words"
-        />
-
-        <Text style={styles.label}>Company</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your company (required)"
-          placeholderTextColor="#666"
-          value={company}
-          onChangeText={setCompany}
-          autoCapitalize="words"
-        />
-
-        <Text style={styles.label}>Job Title</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your job title (required)"
-          placeholderTextColor="#666"
-          value={jobTitle}
-          onChangeText={setJobTitle}
-          autoCapitalize="words"
-        />
-
-        <TouchableOpacity
-          style={[
-            styles.button,
-            (!fullName || !company || !jobTitle) && styles.buttonDisabled,
-          ]}
-          onPress={handleFinish}
-          disabled={!fullName || !company || !jobTitle}
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.buttonText}>Finish</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          <Input
+            label={t("auth.fullNameLabel")}
+            placeholder={t("auth.fullNameSetupPlaceholder")}
+            value={fullName}
+            onChangeText={setFullName}
+            autoCapitalize="words"
+          />
+
+          <Input
+            label={t("auth.companyLabel")}
+            placeholder={t("auth.companyPlaceholder")}
+            value={company}
+            onChangeText={setCompany}
+            autoCapitalize="words"
+          />
+
+          <Input
+            label={t("auth.jobTitleLabel")}
+            placeholder={t("auth.jobTitlePlaceholder")}
+            value={jobTitle}
+            onChangeText={setJobTitle}
+            autoCapitalize="words"
+          />
+
+          <Button
+            title={t("auth.complete")}
+            onPress={handleFinish}
+            disabled={isDisabled}
+            style={styles.submit}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ScreenContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 20,
-  },
-  title: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-    flex: 1,
-  },
-  skipButton: {
-    color: "#7B61FF",
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-  },
-  label: {
-    color: "#999",
-    fontSize: 14,
-    marginBottom: 8,
-    marginTop: 16,
-  },
-  input: {
-    backgroundColor: "#1E1E1E",
-    borderRadius: 12,
-    padding: 16,
-    color: "#fff",
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  button: {
-    backgroundColor: "#7B61FF",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-    marginTop: 32,
-  },
-  buttonDisabled: {
-    backgroundColor: "#2A2A2A",
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});
+const createStyles = (spacing) =>
+  StyleSheet.create({
+    flex: { flex: 1 },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.md,
+      gap: spacing.md,
+    },
+    headerTitle: { flex: 1 },
+    content: {
+      flexGrow: 1,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.xl,
+    },
+    submit: { marginTop: spacing.lg },
+  });

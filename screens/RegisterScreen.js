@@ -1,29 +1,38 @@
 // screens/RegisterScreen.js
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
-  Text,
   StyleSheet,
-  TextInput,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
-  Alert,
   ScrollView,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { useTheme } from "../utils/theme";
 import { validateEmail, validatePassword, validateDisplayName } from "../utils/validation";
+import { mapAuthError } from "../utils/format";
+import { FirestoreService } from "../services/firestoreService";
+import { useTranslation } from "../i18n/I18nProvider";
+import {
+  ScreenContainer,
+  AppText,
+  Input,
+  PasswordInput,
+  Button,
+} from "../components/ui";
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
   const auth = getAuth();
+  const { t } = useTranslation();
+  const { spacing } = useTheme();
+  const styles = useMemo(() => createStyles(spacing), [spacing]);
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const validate = () => {
@@ -57,7 +66,7 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     const err = validate();
     if (err) {
-      Alert.alert("Uyarı", err);
+      Alert.alert(t("auth.warning"), err);
       return;
     }
 
@@ -67,48 +76,51 @@ export default function RegisterScreen() {
       // görünen ad
       await updateProfile(cred.user, { displayName: fullName.trim() });
 
-      Alert.alert("Hoş geldiniz!", "Hesabınız oluşturuldu.");
+      // 🏢 users/{uid} profilini oluştur (kişisel org dahil)
+      await FirestoreService.ensureUserProfile(cred.user, { displayName: fullName.trim() });
+
+      Alert.alert(t("auth.welcomeTitle"), t("auth.accountCreated"));
       // dilersen ProfileSetup'a yönlendirebilirsin:
       navigation.replace("ProfileSetup");
       // veya direkt ana sekmelere:
       // navigation.replace("HomeTabs");
     } catch (error) {
-      console.error("❌ Kayıt hatası:", error);
-      let msg = "Kayıt yapılamadı.";
-      if (error?.code === "auth/email-already-in-use") msg = "Bu e-posta zaten kayıtlı.";
-      if (error?.code === "auth/invalid-email") msg = "Geçersiz e-posta.";
-      if (error?.code === "auth/weak-password") msg = "Şifre zayıf.";
-      Alert.alert("Hata", msg);
+      Alert.alert(t("common.error"), mapAuthError(error));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <View style={styles.content}>
-          <Text style={styles.title}>Create account</Text>
-          <Text style={styles.subtitle}>
-            Aşağıdaki bilgileri doldurarak hızlıca kayıt olabilirsiniz.
-          </Text>
+    <ScreenContainer edges={["top", "bottom"]}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <AppText variant="display" style={styles.title}>
+            {t("auth.registerTitle")}
+          </AppText>
+          <AppText variant="body" color="textSecondary" style={styles.subtitle}>
+            {t("auth.registerSubtitle")}
+          </AppText>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Ad Soyad"
-            placeholderTextColor="#666"
+          <Input
+            label={t("auth.fullNameLabel")}
+            placeholder={t("auth.fullNamePlaceholder")}
             value={fullName}
             onChangeText={setFullName}
             editable={!loading}
+            autoCapitalize="words"
           />
 
-          <TextInput
-            style={styles.input}
-            placeholder="E-posta adresi"
-            placeholderTextColor="#666"
+          <Input
+            label={t("auth.emailLabel")}
+            placeholder={t("auth.registerEmailPlaceholder")}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -117,81 +129,47 @@ export default function RegisterScreen() {
             editable={!loading}
           />
 
-          <View style={styles.pwdRow}>
-            <TextInput
-              style={[styles.input, { flex: 1, marginBottom: 0 }]}
-              placeholder="Şifre (min 8 karakter, büyük/küçük harf, rakam)"
-              placeholderTextColor="#666"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPwd}
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!loading}
-            />
-            <TouchableOpacity
-              onPress={() => setShowPwd((p) => !p)}
-              style={styles.eyeBtn}
-              disabled={loading}
-            >
-              <Text style={{ color: "#7B61FF", fontWeight: "600" }}>
-                {showPwd ? "Gizle" : "Göster"}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <PasswordInput
+            label={t("auth.passwordLabel")}
+            placeholder={t("auth.registerPasswordPlaceholder")}
+            value={password}
+            onChangeText={setPassword}
+            editable={!loading}
+          />
 
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+          <Button
+            title={t("auth.registerSubmit")}
             onPress={handleRegister}
+            loading={loading}
             disabled={loading}
-          >
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign up</Text>}
-          </TouchableOpacity>
+            style={styles.submit}
+          />
 
-          <TouchableOpacity
+          <Button
+            title={t("auth.backToLogin")}
+            icon="arrow-back"
+            variant="ghost"
             onPress={() => navigation.goBack()}
-            style={{ marginTop: 16 }}
-          >
-            <Text style={styles.backText}>← Back to Login</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            disabled={loading}
+            style={styles.back}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ScreenContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#121212" },
-  content: { flex: 1, paddingHorizontal: 24, paddingTop: 60, paddingBottom: 60 },
-  title: { color: "#fff", fontSize: 28, fontWeight: "600", marginBottom: 8 },
-  subtitle: { color: "#999", fontSize: 14, marginBottom: 30 },
-  input: {
-    backgroundColor: "#1E1E1E",
-    borderRadius: 12,
-    padding: 16,
-    color: "#fff",
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#333",
-    marginBottom: 16,
-  },
-  pwdRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
-  eyeBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#333",
-    backgroundColor: "#1E1E1E",
-  },
-  button: {
-    backgroundColor: "#7B61FF",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonDisabled: { backgroundColor: "#555" },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  backText: { color: "#7B61FF", textAlign: "center", fontSize: 14 },
-});
+const createStyles = (spacing) =>
+  StyleSheet.create({
+    flex: { flex: 1 },
+    content: {
+      flexGrow: 1,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.xl,
+      paddingBottom: spacing.xl,
+    },
+    title: { marginBottom: spacing.sm },
+    subtitle: { marginBottom: spacing.xl },
+    submit: { marginTop: spacing.sm },
+    back: { marginTop: spacing.md, alignSelf: "center" },
+  });

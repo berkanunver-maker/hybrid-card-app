@@ -1,22 +1,27 @@
 // screens/SelectCategoryModal.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
-  Text,
-  StyleSheet,
-  Modal,
-  TouchableOpacity,
+  Pressable,
   FlatList,
-  TextInput,
   Alert,
   ActivityIndicator,
+  StyleSheet,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../utils/colors";
+import { useTheme } from "../utils/theme";
+import { useTranslation } from "../i18n/I18nProvider";
 import { FirestoreService } from "../services/firestoreService";
 import { getAuth } from "firebase/auth";
+import { BottomSheet, AppText, Input, Button, Icon } from "../components/ui";
 
 export default function SelectCategoryModal({ visible, onClose, onSelect, cardData }) {
+  const { colors, spacing, radius } = useTheme();
+  const { t } = useTranslation();
+  const styles = useMemo(
+    () => createStyles(colors, spacing, radius),
+    [colors, spacing, radius]
+  );
+
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -42,8 +47,7 @@ export default function SelectCategoryModal({ visible, onClose, onSelect, cardDa
       const fetchedCategories = await FirestoreService.getUserCategories(userId);
       setCategories(fetchedCategories);
     } catch (error) {
-      console.error("❌ Kategoriler yüklenemedi:", error);
-      Alert.alert("Hata", "Kategoriler yüklenemedi.");
+      Alert.alert(t("common.error"), t("modals.categoriesLoadError"));
     } finally {
       setLoading(false);
     }
@@ -52,7 +56,7 @@ export default function SelectCategoryModal({ visible, onClose, onSelect, cardDa
   // Yeni kategori oluştur
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) {
-      Alert.alert("Uyarı", "Lütfen kategori adı girin.");
+      Alert.alert(t("modals.warning"), t("modals.enterCategoryName"));
       return;
     }
 
@@ -69,10 +73,9 @@ export default function SelectCategoryModal({ visible, onClose, onSelect, cardDa
       setShowNewCategory(false);
       setNewCategoryName("");
       setNewCategoryIcon("📁");
-      Alert.alert("Başarılı", "Yeni klasör oluşturuldu!");
+      Alert.alert(t("common.success"), t("modals.folderCreated"));
     } catch (error) {
-      console.error("❌ Kategori oluşturulamadı:", error);
-      Alert.alert("Hata", "Kategori oluşturulamadı.");
+      Alert.alert(t("common.error"), t("modals.categoryCreateError"));
     } finally {
       setLoading(false);
     }
@@ -81,7 +84,7 @@ export default function SelectCategoryModal({ visible, onClose, onSelect, cardDa
   // Kategori seç ve kaydet
   const handleSave = async () => {
     if (!selectedCategory) {
-      Alert.alert("Uyarı", "Lütfen bir klasör seçin.");
+      Alert.alert(t("modals.warning"), t("modals.selectFolder"));
       return;
     }
 
@@ -97,12 +100,11 @@ export default function SelectCategoryModal({ visible, onClose, onSelect, cardDa
       };
 
       const savedCard = await FirestoreService.addCard(updatedCard);
-      
+
       onSelect(selectedCategory, savedCard);
       onClose();
     } catch (error) {
-      console.error("❌ Kart kaydedilemedi:", error);
-      Alert.alert("Hata", "Kart kaydedilemedi.");
+      Alert.alert(t("common.error"), t("modals.cardSaveError"));
     } finally {
       setLoading(false);
     }
@@ -112,288 +114,233 @@ export default function SelectCategoryModal({ visible, onClose, onSelect, cardDa
   const renderCategory = ({ item }) => {
     const isSelected = selectedCategory?.id === item.id;
     return (
-      <TouchableOpacity
+      <Pressable
         style={[styles.categoryItem, isSelected && styles.categoryItemSelected]}
         onPress={() => setSelectedCategory(item)}
+        accessibilityRole="radio"
+        accessibilityState={{ checked: isSelected }}
+        accessibilityLabel={`${item.name}, ${item.cardCount || 0} kart`}
       >
         <View style={styles.categoryLeft}>
-          <Text style={styles.categoryIcon}>{item.icon}</Text>
+          <AppText style={styles.categoryIcon}>{item.icon}</AppText>
           <View>
-            <Text style={styles.categoryName}>{item.name}</Text>
-            <Text style={styles.categoryCount}>{item.cardCount || 0} kart</Text>
+            <AppText variant="bodyStrong">{item.name}</AppText>
+            <AppText variant="caption" color="textSecondary" style={{ marginTop: 2 }}>
+              {t("modals.cardCount", { count: item.cardCount || 0 })}
+            </AppText>
           </View>
         </View>
-        {isSelected && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
-      </TouchableOpacity>
+        {isSelected && (
+          <Icon name="checkmark-circle" size={24} color={colors.primary} />
+        )}
+      </Pressable>
     );
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.modal}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Klasör Seç</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={28} color={colors.text} />
-            </TouchableOpacity>
+    <BottomSheet visible={visible} onClose={onClose}>
+      {/* Header */}
+      <View style={styles.header}>
+        <AppText variant="title">{t("modals.selectFolderTitle")}</AppText>
+        <Pressable
+          onPress={onClose}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Kapat"
+          style={styles.closeBtn}
+        >
+          <Icon name="close" size={28} color={colors.text} />
+        </Pressable>
+      </View>
+
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : showNewCategory ? (
+        // Yeni Kategori Formu
+        <View>
+          <AppText variant="heading" style={styles.formTitle}>
+            {t("modals.createFolderTitle")}
+          </AppText>
+
+          <Input
+            placeholder={t("modals.folderNamePlaceholder")}
+            value={newCategoryName}
+            onChangeText={setNewCategoryName}
+          />
+
+          <AppText variant="label" color="textSecondary" style={styles.iconLabel}>
+            {t("modals.selectIcon")}
+          </AppText>
+          <View style={styles.iconGrid}>
+            {iconOptions.map((icon) => {
+              const selected = newCategoryIcon === icon;
+              return (
+                <Pressable
+                  key={icon}
+                  style={[styles.iconOption, selected && styles.iconOptionSelected]}
+                  onPress={() => setNewCategoryIcon(icon)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`İkon ${icon}`}
+                  accessibilityState={{ selected }}
+                >
+                  <AppText style={styles.iconOptionText}>{icon}</AppText>
+                </Pressable>
+              );
+            })}
           </View>
 
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
-            </View>
-          ) : showNewCategory ? (
-            // Yeni Kategori Formu
-            <View style={styles.newCategoryForm}>
-              <Text style={styles.formTitle}>Yeni Klasör Oluştur</Text>
-
-              <TextInput
-                style={styles.input}
-                placeholder="Klasör Adı"
-                placeholderTextColor={colors.secondaryText}
-                value={newCategoryName}
-                onChangeText={setNewCategoryName}
-              />
-
-              <Text style={styles.iconLabel}>İkon Seç:</Text>
-              <View style={styles.iconGrid}>
-                {iconOptions.map((icon) => (
-                  <TouchableOpacity
-                    key={icon}
-                    style={[
-                      styles.iconOption,
-                      newCategoryIcon === icon && styles.iconOptionSelected,
-                    ]}
-                    onPress={() => setNewCategoryIcon(icon)}
-                  >
-                    <Text style={styles.iconOptionText}>{icon}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <View style={styles.formButtons}>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={() => {
-                    setShowNewCategory(false);
-                    setNewCategoryName("");
-                    setNewCategoryIcon("📁");
-                  }}
-                >
-                  <Text style={styles.cancelButtonText}>İptal</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.createButton} onPress={handleCreateCategory}>
-                  <Text style={styles.createButtonText}>Oluştur</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : (
-            // Kategori Listesi
-            <>
-              <FlatList
-                data={categories}
-                keyExtractor={(item) => item.id}
-                renderItem={renderCategory}
-                contentContainerStyle={styles.list}
-                ListFooterComponent={
-                  <TouchableOpacity
-                    style={styles.newCategoryButton}
-                    onPress={() => setShowNewCategory(true)}
-                  >
-                    <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
-                    <Text style={styles.newCategoryText}>Yeni Klasör Oluştur</Text>
-                  </TouchableOpacity>
-                }
-              />
-
-              {/* Kaydet Butonu */}
-              <TouchableOpacity
-                style={[styles.saveButton, !selectedCategory && styles.saveButtonDisabled]}
-                onPress={handleSave}
-                disabled={!selectedCategory}
-              >
-                <Text style={styles.saveButtonText}>Kaydet</Text>
-              </TouchableOpacity>
-            </>
-          )}
+          <View style={styles.formButtons}>
+            <Button
+              title={t("common.cancel")}
+              variant="secondary"
+              onPress={() => {
+                setShowNewCategory(false);
+                setNewCategoryName("");
+                setNewCategoryIcon("📁");
+              }}
+              style={styles.flexBtn}
+            />
+            <Button
+              title={t("modals.create")}
+              onPress={handleCreateCategory}
+              style={styles.flexBtn}
+            />
+          </View>
         </View>
-      </View>
-    </Modal>
+      ) : (
+        // Kategori Listesi
+        <>
+          <FlatList
+            data={categories}
+            keyExtractor={(item) => item.id}
+            renderItem={renderCategory}
+            style={styles.list}
+            showsVerticalScrollIndicator={false}
+            ListFooterComponent={
+              <Pressable
+                style={styles.newCategoryButton}
+                onPress={() => setShowNewCategory(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Yeni klasör oluştur"
+              >
+                <Icon
+                  name="add-circle-outline"
+                  size={24}
+                  color={colors.primary}
+                />
+                <AppText variant="bodyStrong" color="primary">
+                  {t("modals.createFolderTitle")}
+                </AppText>
+              </Pressable>
+            }
+          />
+
+          {/* Kaydet Butonu */}
+          <Button
+            title={t("common.save")}
+            onPress={handleSave}
+            disabled={!selectedCategory}
+            style={{ marginTop: spacing.md }}
+          />
+        </>
+      )}
+    </BottomSheet>
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "flex-end",
-  },
-  modal: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 40,
-    maxHeight: "80%",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border || "#333",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: colors.text,
-  },
-  loadingContainer: {
-    padding: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  list: {
-    padding: 20,
-  },
-  categoryItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    backgroundColor: colors.cardBackground || "#1C1C1E",
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  categoryItemSelected: {
-    borderColor: colors.primary,
-  },
-  categoryLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  categoryIcon: {
-    fontSize: 32,
-  },
-  categoryName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.text,
-    marginBottom: 4,
-  },
-  categoryCount: {
-    fontSize: 12,
-    color: colors.secondaryText,
-  },
-  newCategoryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 16,
-    backgroundColor: colors.cardBackground || "#1C1C1E",
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    borderStyle: "dashed",
-    gap: 8,
-  },
-  newCategoryText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.primary,
-  },
-  saveButton: {
-    marginHorizontal: 20,
-    marginTop: 12,
-    padding: 16,
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#fff",
-  },
-  newCategoryForm: {
-    padding: 20,
-  },
-  formTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: colors.text,
-    marginBottom: 20,
-  },
-  input: {
-    backgroundColor: colors.cardBackground || "#1C1C1E",
-    padding: 16,
-    borderRadius: 12,
-    color: colors.text,
-    fontSize: 16,
-    marginBottom: 20,
-  },
-  iconLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.text,
-    marginBottom: 12,
-  },
-  iconGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    marginBottom: 20,
-  },
-  iconOption: {
-    width: 50,
-    height: 50,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: colors.cardBackground || "#1C1C1E",
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  iconOptionSelected: {
-    borderColor: colors.primary,
-  },
-  iconOptionText: {
-    fontSize: 24,
-  },
-  formButtons: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: colors.cardBackground || "#1C1C1E",
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.text,
-  },
-  createButton: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  createButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#fff",
-  },
-});
+const createStyles = (colors, spacing, radius) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: spacing.lg,
+    },
+    closeBtn: {
+      width: 44,
+      height: 44,
+      alignItems: "flex-end",
+      justifyContent: "center",
+    },
+    loadingContainer: {
+      paddingVertical: spacing.xxxxl,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    list: {
+      maxHeight: 360,
+    },
+    categoryItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: spacing.lg,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      marginBottom: spacing.md,
+      borderWidth: 2,
+      borderColor: colors.border,
+    },
+    categoryItemSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primaryMuted,
+    },
+    categoryLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+    },
+    categoryIcon: {
+      fontSize: 32,
+    },
+    newCategoryButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: spacing.lg,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      borderWidth: 2,
+      borderColor: colors.primary,
+      borderStyle: "dashed",
+      gap: spacing.sm,
+    },
+    formTitle: {
+      marginBottom: spacing.lg,
+    },
+    iconLabel: {
+      marginBottom: spacing.md,
+    },
+    iconGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.md,
+      marginBottom: spacing.xl,
+    },
+    iconOption: {
+      width: 50,
+      height: 50,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      borderWidth: 2,
+      borderColor: colors.border,
+    },
+    iconOptionSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primaryMuted,
+    },
+    iconOptionText: {
+      fontSize: 24,
+    },
+    formButtons: {
+      flexDirection: "row",
+      gap: spacing.md,
+    },
+    flexBtn: {
+      flex: 1,
+    },
+  });

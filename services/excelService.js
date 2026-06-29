@@ -34,6 +34,7 @@ export const ExcelService = {
           'E-posta': fields.email || '-',
           'Adres': fields.address || '-',
           'Website': fields.website || '-',
+          'Not': card.note || fields.note || '-',
           'Ses Notu': voiceNote?.text || '-',
           'Favori': card.isFavorite ? '⭐' : '-',
           'Oluşturma Tarihi': card.createdAt 
@@ -58,6 +59,7 @@ export const ExcelService = {
         { wch: 25 }, // E-posta
         { wch: 40 }, // Adres
         { wch: 25 }, // Website
+        { wch: 40 }, // Not
         { wch: 50 }, // Ses Notu
         { wch: 8 },  // Favori
         { wch: 15 }, // Tarih

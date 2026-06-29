@@ -1,24 +1,34 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-} from "react-native";
+// screens/DocumentScreen.js
+import React, { useState, useMemo } from "react";
+import { View, Pressable, ScrollView, StyleSheet } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { useTheme } from "../utils/theme";
-import { Loader, FeedbackModal, CustomButton } from "../components";
-import { analyzeDocument } from "../services/documentAIService";
+import { useTranslation } from "../i18n/I18nProvider";
+import { FeedbackModal } from "../components";
+import { DocumentAIService } from "../services/documentAIService";
+import {
+  ScreenContainer,
+  AppText,
+  Button,
+  Loader,
+  SectionHeader,
+  Icon,
+} from "../components/ui";
 
 export default function DocumentScreen() {
-  const { colors } = useTheme();
+  const { colors, spacing, radius } = useTheme();
+  const { t } = useTranslation();
+  const styles = useMemo(
+    () => createStyles(colors, spacing, radius),
+    [colors, spacing, radius]
+  );
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
 
-  // 📂 Dosya seçimi
+  // Dosya seçimi
   const handlePickFile = async () => {
     const result = await DocumentPicker.getDocumentAsync({
       type: ["application/pdf", "image/*"],
@@ -29,21 +39,20 @@ export default function DocumentScreen() {
     setSelectedFile(result.assets ? result.assets[0] : result);
   };
 
-  // 🧠 Belge analizi
+  // Belge analizi
   const handleAnalyze = async () => {
     if (!selectedFile) {
-      alert("Lütfen önce bir dosya seçin.");
+      alert(t("tools.documentSelectFileAlert"));
       return;
     }
 
     try {
       setLoading(true);
-      const response = await analyzeDocument(selectedFile);
-      setAnalysisResult(response || "Sonuç alınamadı");
+      const response = await DocumentAIService.analyzeCard(selectedFile.uri);
+      setAnalysisResult(response || t("tools.noResult"));
       setModalVisible(true);
     } catch (error) {
-      console.error("❌ Document analyze error:", error);
-      setAnalysisResult("Belge analizinde hata oluştu.");
+      setAnalysisResult(t("tools.documentError"));
       setModalVisible(true);
     } finally {
       setLoading(false);
@@ -51,83 +60,97 @@ export default function DocumentScreen() {
   };
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ paddingBottom: 40 }}
-    >
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.text }]}>
-          Document AI Analizi
-        </Text>
-
-        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-          PDF veya görsel yükleyerek AI destekli analiz yapabilirsiniz.
-        </Text>
-
-        <TouchableOpacity
-          style={[
-            styles.uploadBox,
-            { borderColor: colors.border, backgroundColor: colors.surface },
-          ]}
-          onPress={handlePickFile}
+    <ScreenContainer>
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.lg, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <AppText variant="title">{t("tools.documentTitle")}</AppText>
+        <AppText
+          variant="body"
+          color="textSecondary"
+          style={{ marginTop: spacing.xs, marginBottom: spacing.xl }}
         >
-          <Text style={{ color: colors.text }}>
-            {selectedFile ? selectedFile.name : "📄 Dosya Seç"}
-          </Text>
-        </TouchableOpacity>
+          {t("tools.documentSubtitle")}
+        </AppText>
 
-        <CustomButton
-          title="Analiz Et"
+        <SectionHeader title={t("tools.fileSection")} />
+
+        <Pressable
+          style={({ pressed }) => [styles.uploadBox, pressed && { opacity: 0.92 }]}
+          onPress={handlePickFile}
+          accessibilityRole="button"
+          accessibilityLabel={
+            selectedFile ? `Seçili dosya ${selectedFile.name}, değiştir` : "Dosya seç"
+          }
+        >
+          <View style={styles.uploadIcon}>
+            <Icon
+              name={selectedFile ? "document-text" : "cloud-upload-outline"}
+              size={24}
+              color={colors.primary}
+            />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <AppText variant="bodyStrong" numberOfLines={1}>
+              {selectedFile ? selectedFile.name : t("tools.selectFile")}
+            </AppText>
+            <AppText variant="caption" color="textMuted" style={{ marginTop: 2 }}>
+              {selectedFile ? t("tools.tapToChange") : t("tools.uploadFileHint")}
+            </AppText>
+          </View>
+        </Pressable>
+
+        <Button
+          title={t("tools.analyze")}
+          icon="sparkles-outline"
           onPress={handleAnalyze}
           disabled={!selectedFile}
-          style={{ marginTop: 20 }}
+          loading={loading}
+          style={{ marginTop: spacing.xl }}
         />
-      </View>
+      </ScrollView>
 
       {/* Loader */}
-      <Loader visible={loading} text="Analiz ediliyor..." />
+      <Loader visible={loading} text={t("tools.analyzing")} />
 
       {/* Feedback Modal */}
       <FeedbackModal
         visible={modalVisible}
-        title="Analiz Sonucu"
+        title={t("tools.analysisResult")}
         message={
           typeof analysisResult === "string"
             ? analysisResult
             : JSON.stringify(analysisResult, null, 2)
         }
         primaryAction={{
-          text: "Kapat",
+          text: t("tools.close"),
           onPress: () => setModalVisible(false),
         }}
         onClose={() => setModalVisible(false)}
       />
-    </ScrollView>
+    </ScreenContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 20,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  uploadBox: {
-    borderWidth: 1.4,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+const createStyles = (colors, spacing, radius) =>
+  StyleSheet.create({
+    uploadBox: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      borderWidth: 1.4,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+    },
+    uploadIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.pill,
+      backgroundColor: colors.primaryMuted,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  });

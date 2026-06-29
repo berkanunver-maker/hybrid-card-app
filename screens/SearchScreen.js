@@ -1,32 +1,45 @@
 // screens/SearchScreen.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
+  Pressable,
   ScrollView,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { getAuth } from 'firebase/auth';
-import { colors } from '../utils/colors';
-import { SearchService } from '../services/searchService';
-import { FirestoreService } from '../services/firestoreService';
-import SearchBar from '../components/SearchBar';
-import SearchResultCard from '../components/SearchResultCard';
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { getAuth } from "firebase/auth";
+import { useTheme } from "../utils/theme";
+import { useTranslation } from "../i18n/I18nProvider";
+import { SearchService } from "../services/searchService";
+import { FirestoreService } from "../services/firestoreService";
+import SearchBar from "../components/SearchBar";
+import SearchResultCard from "../components/SearchResultCard";
+import {
+  ScreenContainer,
+  AppText,
+  EmptyState,
+  SectionHeader,
+  Loader,
+  Icon,
+} from "../components/ui";
 
 export default function SearchScreen() {
   const navigation = useNavigation();
-  const [searchQuery, setSearchQuery] = useState('');
+  const { t } = useTranslation();
+  const { colors, spacing, radius } = useTheme();
+  const styles = useMemo(
+    () => createStyles(colors, spacing, radius),
+    [colors, spacing, radius]
+  );
+
+  const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchHistory, setSearchHistory] = useState([]);
   const [categories, setCategories] = useState([]);
   const [userId, setUserId] = useState(null);
-  
+
   // Filtreler
   const [filters, setFilters] = useState({
     onlyFavorites: false,
@@ -68,7 +81,7 @@ export default function SearchScreen() {
       const cats = await FirestoreService.getUserCategories(userId);
       setCategories(cats);
     } catch (error) {
-      console.error('❌ Kategoriler yüklenemedi:', error);
+      // Kategoriler yüklenemedi — sessiz geç
     }
   };
 
@@ -76,46 +89,48 @@ export default function SearchScreen() {
   const searchTimeout = React.useRef(null);
 
   // Arama yap (debounce ile)
-  const performSearch = useCallback(async (query, currentFilters) => {
-    if (!userId) return;
+  const performSearch = useCallback(
+    async (query, currentFilters) => {
+      if (!userId) return;
 
-    // Önceki timer'ı iptal et
-    if (searchTimeout.current) {
-      clearTimeout(searchTimeout.current);
-    }
-
-    // Boş sorgu ise sonuçları temizle
-    if (!query.trim()) {
-      setResults([]);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-
-    // 300ms bekle (debounce)
-    searchTimeout.current = setTimeout(async () => {
-      try {
-        const searchResults = await SearchService.searchCards(
-          query,
-          userId,
-          currentFilters
-        );
-        setResults(searchResults);
-        
-        // Arama geçmişine ekle
-        if (query.trim()) {
-          await SearchService.addToHistory(query);
-          await loadSearchHistory();
-        }
-      } catch (error) {
-        console.error('❌ Arama hatası:', error);
-        setResults([]);
-      } finally {
-        setLoading(false);
+      // Önceki timer'ı iptal et
+      if (searchTimeout.current) {
+        clearTimeout(searchTimeout.current);
       }
-    }, 300);
-  }, [userId]);
+
+      // Boş sorgu ise sonuçları temizle
+      if (!query.trim()) {
+        setResults([]);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+
+      // 300ms bekle (debounce)
+      searchTimeout.current = setTimeout(async () => {
+        try {
+          const searchResults = await SearchService.searchCards(
+            query,
+            userId,
+            currentFilters
+          );
+          setResults(searchResults);
+
+          // Arama geçmişine ekle
+          if (query.trim()) {
+            await SearchService.addToHistory(query);
+            await loadSearchHistory();
+          }
+        } catch (error) {
+          setResults([]);
+        } finally {
+          setLoading(false);
+        }
+      }, 300);
+    },
+    [userId]
+  );
 
   // Arama query değiştiğinde
   useEffect(() => {
@@ -132,7 +147,7 @@ export default function SearchScreen() {
   }, []);
 
   const handleClearSearch = () => {
-    setSearchQuery('');
+    setSearchQuery("");
     setResults([]);
   };
 
@@ -146,35 +161,58 @@ export default function SearchScreen() {
   };
 
   const handleCardPress = (card) => {
-    navigation.navigate('CardDetail', { cardData: card });
+    navigation.navigate("CardDetail", { cardData: card });
   };
 
   const toggleFavoriteFilter = () => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       onlyFavorites: !prev.onlyFavorites,
     }));
   };
 
   const toggleQAFilter = () => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       minQAScore: prev.minQAScore === 80 ? null : 80,
     }));
   };
 
   const handleCategoryFilter = (categoryId) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       categoryId: prev.categoryId === categoryId ? null : categoryId,
     }));
   };
 
+  const renderFilterChip = ({
+    chipKey,
+    active,
+    onPress,
+    leading,
+    label,
+    accessibilityLabel,
+  }) => (
+    <Pressable
+      key={chipKey}
+      style={[styles.filterChip, active && styles.filterChipActive]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      accessibilityLabel={accessibilityLabel || label}
+    >
+      {leading}
+      <AppText
+        variant="caption"
+        style={active ? styles.filterTextActive : styles.filterText}
+      >
+        {label}
+      </AppText>
+    </Pressable>
+  );
+
   const renderResult = ({ item }) => (
-    <SearchResultCard 
-      card={item} 
-      onPress={() => handleCardPress(item)} 
-    />
+    <SearchResultCard card={item} onPress={() => handleCardPress(item)} />
   );
 
   const renderEmptyState = () => {
@@ -182,25 +220,21 @@ export default function SearchScreen() {
 
     if (!searchQuery.trim()) {
       return (
-        <View style={styles.emptyState}>
-          <Ionicons name="search-outline" size={64} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>Arama Yap</Text>
-          <Text style={styles.emptySubtitle}>
-            İsim, şirket, hizmet veya diğer bilgilere göre kart arayın
-          </Text>
-        </View>
+        <EmptyState
+          icon="search-outline"
+          title={t("search.emptyTitle")}
+          description={t("search.emptyDescription")}
+        />
       );
     }
 
     if (results.length === 0) {
       return (
-        <View style={styles.emptyState}>
-          <Ionicons name="sad-outline" size={64} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>Sonuç Bulunamadı</Text>
-          <Text style={styles.emptySubtitle}>
-            "{searchQuery}" için sonuç bulunamadı
-          </Text>
-        </View>
+        <EmptyState
+          icon="sad-outline"
+          title={t("search.noResultsTitle")}
+          description={t("search.noResultsDescription", { query: searchQuery })}
+        />
       );
     }
 
@@ -208,16 +242,19 @@ export default function SearchScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenContainer>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <Pressable
           onPress={() => navigation.goBack()}
           style={styles.backButton}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Geri"
         >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Ara</Text>
+          <Icon name="arrow-back" size={24} color={colors.text} />
+        </Pressable>
+        <AppText variant="title">{t("common.search")}</AppText>
         <View style={styles.placeholder} />
       </View>
 
@@ -229,135 +266,110 @@ export default function SearchScreen() {
       />
 
       {/* Filters */}
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.filtersContainer}
       >
-        <TouchableOpacity
-          style={[
-            styles.filterChip,
-            filters.onlyFavorites && styles.filterChipActive,
-          ]}
-          onPress={toggleFavoriteFilter}
-        >
-          <Ionicons 
-            name={filters.onlyFavorites ? "star" : "star-outline"} 
-            size={16} 
-            color={filters.onlyFavorites ? "#FFD700" : colors.textSecondary} 
-          />
-          <Text 
-            style={[
-              styles.filterText,
-              filters.onlyFavorites && styles.filterTextActive,
-            ]}
-          >
-            Favoriler
-          </Text>
-        </TouchableOpacity>
+        {renderFilterChip({
+          active: filters.onlyFavorites,
+          onPress: toggleFavoriteFilter,
+          accessibilityLabel: "Favoriler filtresi",
+          leading: (
+            <Icon
+              name={filters.onlyFavorites ? "star" : "star-outline"}
+              size={16}
+              color={filters.onlyFavorites ? colors.star : colors.textSecondary}
+            />
+          ),
+          label: t("search.filterFavorites"),
+        })}
 
-        <TouchableOpacity
-          style={[
-            styles.filterChip,
-            filters.minQAScore && styles.filterChipActive,
-          ]}
-          onPress={toggleQAFilter}
-        >
-          <Ionicons 
-            name="trophy" 
-            size={16} 
-            color={filters.minQAScore ? colors.success : colors.textSecondary} 
-          />
-          <Text 
-            style={[
-              styles.filterText,
-              filters.minQAScore && styles.filterTextActive,
-            ]}
-          >
-            Kaliteli (QA {'>'}80)
-          </Text>
-        </TouchableOpacity>
+        {renderFilterChip({
+          active: !!filters.minQAScore,
+          onPress: toggleQAFilter,
+          accessibilityLabel: "Kaliteli kartlar filtresi",
+          leading: (
+            <Icon
+              name="trophy"
+              size={16}
+              color={filters.minQAScore ? colors.success : colors.textSecondary}
+            />
+          ),
+          label: t("search.filterHighQuality"),
+        })}
 
-        {categories.map((cat) => (
-          <TouchableOpacity
-            key={cat.id}
-            style={[
-              styles.filterChip,
-              filters.categoryId === cat.id && styles.filterChipActive,
-            ]}
-            onPress={() => handleCategoryFilter(cat.id)}
-          >
-            <Text style={styles.filterIcon}>{cat.icon}</Text>
-            <Text 
-              style={[
-                styles.filterText,
-                filters.categoryId === cat.id && styles.filterTextActive,
-              ]}
-            >
-              {cat.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {categories.map((cat) =>
+          renderFilterChip({
+            chipKey: cat.id,
+            active: filters.categoryId === cat.id,
+            onPress: () => handleCategoryFilter(cat.id),
+            accessibilityLabel: `${cat.name} kategorisi filtresi`,
+            leading: <AppText style={styles.filterIcon}>{cat.icon}</AppText>,
+            label: cat.name,
+          })
+        )}
       </ScrollView>
 
       {/* Results Count */}
-      {searchQuery.trim() && !loading && (
+      {searchQuery.trim() && !loading ? (
         <View style={styles.resultsHeader}>
-          <Text style={styles.resultsCount}>
-            {results.length} sonuç bulundu
-          </Text>
+          <AppText variant="caption" color="textMuted">
+            {t("search.resultsCount", { count: results.length })}
+          </AppText>
         </View>
-      )}
+      ) : null}
 
       {/* Search History */}
-      {!searchQuery.trim() && searchHistory.length > 0 && (
+      {!searchQuery.trim() && searchHistory.length > 0 ? (
         <View style={styles.historyContainer}>
-          <View style={styles.historyHeader}>
-            <Text style={styles.historyTitle}>Son Aramalar</Text>
-            <TouchableOpacity 
-              onPress={async () => {
-                await SearchService.clearSearchHistory();
-                setSearchHistory([]);
-              }}
-            >
-              <Text style={styles.historyClear}>Temizle</Text>
-            </TouchableOpacity>
-          </View>
+          <SectionHeader
+            title={t("search.recentSearches")}
+            action={
+              <Pressable
+                onPress={async () => {
+                  await SearchService.clearSearchHistory();
+                  setSearchHistory([]);
+                }}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Arama geçmişini temizle"
+              >
+                <AppText variant="caption" color="primary">
+                  {t("search.clear")}
+                </AppText>
+              </Pressable>
+            }
+          />
           {searchHistory.map((item, index) => (
             <View key={index} style={styles.historyItem}>
-              <TouchableOpacity
+              <Pressable
                 style={styles.historyItemButton}
                 onPress={() => handleHistoryItemPress(item)}
+                accessibilityRole="button"
+                accessibilityLabel={`${item} aramasını tekrarla`}
               >
-                <Ionicons 
-                  name="time-outline" 
-                  size={18} 
-                  color={colors.textSecondary} 
-                />
-                <Text style={styles.historyItemText}>{item}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+                <Icon name="time-outline" size={18} color={colors.textSecondary} />
+                <AppText variant="body" style={styles.historyItemText} numberOfLines={1}>
+                  {item}
+                </AppText>
+              </Pressable>
+              <Pressable
                 onPress={() => handleRemoveHistoryItem(item)}
                 style={styles.historyRemove}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={`${item} aramasını geçmişten kaldır`}
               >
-                <Ionicons 
-                  name="close" 
-                  size={18} 
-                  color={colors.textMuted} 
-                />
-              </TouchableOpacity>
+                <Icon name="close" size={18} color={colors.textMuted} />
+              </Pressable>
             </View>
           ))}
         </View>
-      )}
+      ) : null}
 
       {/* Loading */}
-      {loading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Aranıyor...</Text>
-        </View>
-      )}
+      <Loader visible={loading} text={t("search.searching")} />
 
       {/* Results */}
       <FlatList
@@ -368,142 +380,91 @@ export default function SearchScreen() {
         contentContainerStyle={styles.resultsList}
         showsVerticalScrollIndicator={false}
       />
-    </View>
+    </ScreenContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingTop: 60,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 8,
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  placeholder: {
-    width: 40,
-  },
-  filtersContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    gap: 8,
-  },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.cardBackground,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  filterChipActive: {
-    backgroundColor: colors.primary + '20',
-    borderColor: colors.primary,
-  },
-  filterIcon: {
-    fontSize: 14,
-  },
-  filterText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  filterTextActive: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  resultsHeader: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  resultsCount: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontWeight: '600',
-  },
-  historyContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  historyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  historyTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.textMuted,
-  },
-  historyClear: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  historyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  historyItemButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  historyItemText: {
-    fontSize: 14,
-    color: colors.text,
-  },
-  historyRemove: {
-    padding: 4,
-  },
-  loadingContainer: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: colors.textMuted,
-  },
-  emptyState: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  resultsList: {
-    paddingBottom: 20,
-  },
-});
+const createStyles = (colors, spacing, radius) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.xl,
+      marginBottom: spacing.sm,
+    },
+    backButton: {
+      width: 44,
+      height: 44,
+      alignItems: "center",
+      justifyContent: "center",
+      marginLeft: -8,
+    },
+    placeholder: {
+      width: 44,
+    },
+    filtersContainer: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.md,
+      gap: spacing.sm,
+    },
+    filterChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.pill,
+      gap: 6,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    filterChipActive: {
+      backgroundColor: colors.primaryMuted,
+      borderColor: colors.primary,
+    },
+    filterIcon: {
+      fontSize: 14,
+    },
+    filterText: {
+      color: colors.textSecondary,
+    },
+    filterTextActive: {
+      color: colors.primary,
+    },
+    resultsHeader: {
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+    },
+    historyContainer: {
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+    },
+    historyItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    historyItemButton: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      minHeight: 28,
+    },
+    historyItemText: {
+      flex: 1,
+    },
+    historyRemove: {
+      width: 44,
+      height: 44,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    resultsList: {
+      paddingBottom: spacing.xl,
+    },
+  });

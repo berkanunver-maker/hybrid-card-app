@@ -1,75 +1,68 @@
 // components/SearchBar.js
-import React from 'react';
-import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../utils/colors';
+import React, { useMemo } from "react";
+import { View, StyleSheet } from "react-native";
+import { useTheme } from "../utils/theme";
+import { useTranslation } from "../i18n/I18nProvider";
+import { Input, Icon } from "./ui";
 
-export default function SearchBar({ 
-  value, 
-  onChangeText, 
-  onClear, 
-  placeholder = 'İsim, şirket, hizmet ara...',
+export default function SearchBar({
+  value,
+  onChangeText,
+  onClear,
+  placeholder,
   autoFocus = true,
 }) {
+  const { colors, spacing } = useTheme();
+  const { t } = useTranslation();
+  const styles = useMemo(() => createStyles(colors, spacing), [colors, spacing]);
+
+  const resolvedPlaceholder = placeholder ?? t("search.placeholder");
+  const hasValue = value.length > 0;
+
   return (
     <View style={styles.container}>
-      <Ionicons 
-        name="search" 
-        size={20} 
-        color={colors.textSecondary} 
-        style={styles.searchIcon} 
+      <Icon
+        name="search"
+        size={20}
+        color={colors.textSecondary}
+        style={styles.searchIcon}
       />
-      
-      <TextInput
-        style={styles.input}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textMuted}
+      <Input
         value={value}
         onChangeText={onChangeText}
+        placeholder={resolvedPlaceholder}
         autoFocus={autoFocus}
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
+        accessibilityLabel="Arama"
+        rightIcon={hasValue ? "close-circle" : undefined}
+        onRightIconPress={hasValue ? onClear : undefined}
+        containerStyle={styles.inputContainer}
+        style={styles.input}
       />
-      
-      {value.length > 0 && (
-        <TouchableOpacity onPress={onClear} style={styles.clearButton}>
-          <Ionicons 
-            name="close-circle" 
-            size={20} 
-            color={colors.textSecondary} 
-          />
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginHorizontal: 20,
-    marginVertical: 16,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    color: colors.text,
-    fontSize: 16,
-  },
-  clearButton: {
-    padding: 4,
-  },
-});
+const createStyles = (colors, spacing) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginHorizontal: spacing.xl,
+      marginVertical: spacing.lg,
+    },
+    searchIcon: {
+      position: "absolute",
+      left: 14,
+      zIndex: 1,
+    },
+    inputContainer: {
+      flex: 1,
+      marginBottom: 0,
+    },
+    input: {
+      paddingLeft: 26,
+    },
+  });

@@ -1,377 +1,306 @@
-import React, { useEffect, useState } from "react";
+// screens/LoginScreen.js
+import React, { useState, useMemo } from "react";
 import {
   View,
-  Text,
   StyleSheet,
-  TextInput,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   Alert,
   ScrollView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  signInWithCredential,
-  GoogleAuthProvider,
-  OAuthProvider,
-} from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { useTheme } from "../utils/theme";
 import { validateEmail } from "../utils/validation";
-
-import SocialButton from "../components/SocialButton";
-
-// Google
-import * as WebBrowser from "expo-web-browser";
-import * as Google from "expo-auth-session/providers/google";
-
-// Apple
-import * as AppleAuthentication from "expo-apple-authentication";
-import * as Crypto from "expo-crypto";
-
-// Google için Expo Session
-WebBrowser.maybeCompleteAuthSession();
-
-// Google OAuth Client IDs (Environment Variables)
-const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+import { useTranslation } from "../i18n/I18nProvider";
+import {
+  ScreenContainer,
+  AppText,
+  Input,
+  PasswordInput,
+  Button,
+  Icon,
+} from "../components/ui";
 
 export default function LoginScreen() {
   const navigation = useNavigation();
   const auth = getAuth();
+  const { t } = useTranslation();
+  const { colors, spacing, radius } = useTheme();
+  const styles = useMemo(
+    () => createStyles(colors, spacing, radius),
+    [colors, spacing, radius]
+  );
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState(false);
 
   // -------- Email & Password Giriş --------
   const handleLogin = async () => {
     // Validate email
     const emailValidation = validateEmail(email);
     if (!emailValidation.valid) {
-      Alert.alert("Hata", emailValidation.error);
+      Alert.alert(t("common.error"), emailValidation.error);
       return;
     }
 
     // Validate password is not empty
     if (!password.trim()) {
-      Alert.alert("Hata", "Lütfen şifre giriniz");
+      Alert.alert(t("common.error"), t("auth.passwordRequired"));
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert("Hata", "Şifre en az 6 karakter olmalıdır");
+      Alert.alert(t("common.error"), t("auth.passwordMinLength"));
       return;
     }
 
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
-      console.log("✅ Giriş başarılı (email)");
       navigation.replace("Main");
     } catch (error) {
-      console.error("❌ Giriş hatası:", error);
       if (error?.code === "auth/user-not-found") {
         Alert.alert(
-          "Kullanıcı bulunamadı",
-          "Bu email için hesap yok. Lütfen kayıt olun veya Google/Apple ile giriş yapın."
+          t("auth.userNotFoundTitle"),
+          t("auth.userNotFoundMessage")
         );
       } else if (error?.code === "auth/invalid-credential") {
-        Alert.alert("Hatalı bilgi", "E-posta veya şifre hatalı.");
+        Alert.alert(t("auth.invalidCredentialTitle"), t("auth.invalidCredentialMessage"));
+      } else if (error?.code === "auth/wrong-password") {
+        Alert.alert(t("auth.wrongPasswordTitle"), t("auth.wrongPasswordMessage"));
+      } else if (error?.code === "auth/too-many-requests") {
+        Alert.alert(
+          t("auth.tooManyRequestsTitle"),
+          t("auth.tooManyRequestsMessage")
+        );
       } else {
-        Alert.alert("Hata", error?.message || "Giriş yapılamadı.");
+        Alert.alert(t("common.error"), error?.message || t("auth.loginFailed"));
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // -------- Google Sign-In --------
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: GOOGLE_WEB_CLIENT_ID,
-    expoClientId: GOOGLE_WEB_CLIENT_ID,
-    iosClientId: GOOGLE_IOS_CLIENT_ID || GOOGLE_WEB_CLIENT_ID,
-    androidClientId: GOOGLE_ANDROID_CLIENT_ID || GOOGLE_WEB_CLIENT_ID,
-    scopes: ["profile", "email"],
-  });
-
-  useEffect(() => {
-    const signInWithGoogleResponse = async () => {
-      if (response?.type !== "success") return;
-
-      setOauthLoading(true);
-
-      try {
-        const { authentication, params } = response;
-        const idToken = params?.id_token;
-        const accessToken = authentication?.accessToken;
-
-        if (!idToken && !accessToken) {
-          throw new Error("Google token alınamadı.");
-        }
-
-        const credential = GoogleAuthProvider.credential(idToken, accessToken);
-        await signInWithCredential(auth, credential);
-
-        console.log("✅ Google giriş tamam");
-        navigation.replace("Main");
-      } catch (err) {
-        console.error("❌ Google login hata:", err);
-        Alert.alert("Google Girişi Hatası", err?.message || "Giriş başarısız.");
-      } finally {
-        setOauthLoading(false);
-      }
-    };
-
-    signInWithGoogleResponse();
-  }, [response]);
-
-  const handleGoogleLogin = async () => {
-    if (!GOOGLE_WEB_CLIENT_ID) {
+  // -------- Test Login (Sadece Development) --------
+  const handleTestLogin = async () => {
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, "test@test.com", "test123");
+      navigation.replace("Main");
+    } catch (error) {
       Alert.alert(
-        "Google Login Yapılandırılmamış",
-        "Google ile giriş yapmak için .env dosyasına EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID eklenmelidir.\n\nŞimdilik Email/Password ile giriş yapabilirsiniz."
+        t("auth.testAccountErrorTitle"),
+        t("auth.testAccountErrorMessage")
       );
-      return;
-    }
-
-    try {
-      setOauthLoading(true);
-      await promptAsync();
-    } catch (err) {
-      console.error("❌ Google hata:", err);
-      Alert.alert("Hata", "Google ile giriş başlatılamadı.");
-      setOauthLoading(false);
-    }
-  };
-
-  // -------- Apple Sign-In --------
-  const handleAppleLogin = async () => {
-    if (Platform.OS !== "ios") {
-      Alert.alert("Bilgi", "Apple sadece iOS'ta geçerli.");
-      return;
-    }
-
-    try {
-      setOauthLoading(true);
-
-      const rawNonceBytes = await Crypto.getRandomBytesAsync(16);
-      const rawNonce = Array.from(rawNonceBytes)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-
-      const hashedNonce = await Crypto.digestStringAsync(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        rawNonce
-      );
-
-      const appleResp = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-        nonce: hashedNonce,
-      });
-
-      const { identityToken } = appleResp || {};
-      if (!identityToken) throw new Error("Apple kimlik belirteci alınamadı.");
-
-      const provider = new OAuthProvider("apple.com");
-      const credential = provider.credential({
-        idToken: identityToken,
-        rawNonce,
-      });
-
-      await signInWithCredential(auth, credential);
-
-      console.log("✅ Apple giriş tamam");
-      navigation.replace("HomeTabs");
-    } catch (err) {
-      console.error("❌ Apple login hata:", err);
-      if (err?.code === "ERR_CANCELED") return;
-      Alert.alert("Hata", err?.message || "Apple ile giriş yapılamadı.");
     } finally {
-      setOauthLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <View style={styles.content}>
-          <Text style={styles.title}>Login via email</Text>
-          <Text style={styles.subtitle}>
-            The unregistered mailbox will be automatically registered
-          </Text>
+    <ScreenContainer edges={["top", "bottom"]}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.content}>
+            <AppText variant="display" style={{ marginBottom: spacing.sm }}>
+              {t("auth.loginTitle")}
+            </AppText>
+            <AppText
+              variant="body"
+              color="textSecondary"
+              style={{ marginBottom: spacing.xxxl }}
+            >
+              {t("auth.loginSubtitle")}
+            </AppText>
 
-          {/* Email */}
-          <TextInput
-            style={styles.input}
-            placeholder="Please enter email"
-            placeholderTextColor="#666"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            editable={!loading && !oauthLoading}
-          />
-
-          {/* Password */}
-          <TextInput
-            style={styles.input}
-            placeholder="Please enter password"
-            placeholderTextColor="#666"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            editable={!loading && !oauthLoading}
-          />
-
-          {/* Login button */}
-          <TouchableOpacity
-            style={[styles.button, (loading || oauthLoading) && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={loading || oauthLoading}
-          >
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Next</Text>}
-          </TouchableOpacity>
-
-          {/* Forgot Password */}
-          <TouchableOpacity
-            onPress={() => navigation.navigate("ForgotPassword")}
-            style={{ marginTop: 14 }}
-          >
-            <Text style={styles.forgotText}>Forgot your password?</Text>
-          </TouchableOpacity>
-
-          {/* 🆕 Kayıt Ol */}
-          <TouchableOpacity
-            onPress={() => navigation.navigate("Register")}
-            style={{ marginTop: 6 }}
-          >
-            <Text style={styles.signupText}>
-              Don’t have an account?{" "}
-              <Text style={styles.signupLink}>Create one</Text>
-            </Text>
-          </TouchableOpacity>
-
-          {/* Social Login */}
-          <View style={styles.socialContainer}>
-            <Text style={styles.orText}>Or continue with</Text>
-
-            <SocialButton
-              iconSet="MaterialCommunityIcons"
-              iconName="google"
-              label={oauthLoading ? "Signing in..." : "Sign in with Google"}
-              color="#DB4437"
-              onPress={handleGoogleLogin}
+            {/* Email */}
+            <Input
+              label={t("auth.emailLabel")}
+              placeholder={t("auth.emailPlaceholder")}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              editable={!loading}
             />
 
-            <SocialButton
-              iconSet="FontAwesome"
-              iconName="apple"
-              label={oauthLoading ? "Signing in..." : "Sign in with Apple"}
-              color="#fff"
-              onPress={handleAppleLogin}
+            {/* Password */}
+            <PasswordInput
+              label={t("auth.passwordLabel")}
+              placeholder={t("auth.passwordPlaceholder")}
+              value={password}
+              onChangeText={setPassword}
+              editable={!loading}
             />
-          </View>
 
-          {/* Test info - Only visible in development mode */}
-          {__DEV__ && (
-            <View style={styles.testInfo}>
-              <Text style={styles.testInfoText}>💡 Test için (sadece dev mode):</Text>
-              <Text style={styles.testInfoText}>Email: test@test.com</Text>
-              <Text style={styles.testInfoText}>Şifre: test123</Text>
+            {/* Login button */}
+            <Button
+              title={t("auth.loginButton")}
+              onPress={handleLogin}
+              loading={loading}
+              disabled={loading}
+              style={{ marginTop: spacing.sm }}
+            />
+
+            {/* Forgot Password */}
+            <Button
+              title={t("auth.forgotPasswordButton")}
+              variant="ghost"
+              size="sm"
+              onPress={() => navigation.navigate("ForgotPassword")}
+              style={{ marginTop: spacing.lg, alignSelf: "center" }}
+              fullWidth={false}
+            />
+
+            {/* Kayıt Ol */}
+            <View style={styles.signupRow}>
+              <AppText variant="body" color="textSecondary">
+                {t("auth.noAccountQuestion")}{" "}
+              </AppText>
+              <Button
+                title={t("auth.registerButton")}
+                variant="ghost"
+                size="sm"
+                onPress={() => navigation.navigate("Register")}
+                fullWidth={false}
+                style={styles.signupBtn}
+              />
             </View>
-          )}
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+            {/* Divider */}
+            {__DEV__ && (
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <AppText
+                  variant="caption"
+                  color="textMuted"
+                  style={{ marginHorizontal: spacing.lg }}
+                >
+                  {t("auth.or")}
+                </AppText>
+                <View style={styles.dividerLine} />
+              </View>
+            )}
+
+            {/* Test Login Button - Only in development */}
+            {__DEV__ && (
+              <Button
+                title={t("auth.testLoginButton")}
+                icon="flask-outline"
+                variant="secondary"
+                onPress={handleTestLogin}
+                disabled={loading}
+                style={styles.testButton}
+              />
+            )}
+
+            {/* Test info - Only visible in development mode */}
+            {__DEV__ && (
+              <View style={styles.testInfo}>
+                <View style={styles.testInfoHeader}>
+                  <Icon
+                    name="bulb-outline"
+                    size={16}
+                    color={colors.primary}
+                  />
+                  <AppText
+                    variant="label"
+                    color="primary"
+                    style={{ marginLeft: spacing.sm }}
+                  >
+                    {t("auth.testInfoTitle")}
+                  </AppText>
+                </View>
+                <AppText
+                  variant="caption"
+                  color="textSecondary"
+                  style={styles.mono}
+                >
+                  Email: test@test.com
+                </AppText>
+                <AppText
+                  variant="caption"
+                  color="textSecondary"
+                  style={styles.mono}
+                >
+                  {t("auth.testInfoPassword")}
+                </AppText>
+                <AppText
+                  variant="caption"
+                  color="textMuted"
+                  style={{ marginTop: spacing.sm, fontStyle: "italic" }}
+                >
+                  {t("auth.testInfoNote")}
+                </AppText>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ScreenContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#121212" },
-
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 60,
-  },
-
-  title: { color: "#fff", fontSize: 28, fontWeight: "600", marginBottom: 8 },
-
-  subtitle: { color: "#999", fontSize: 14, marginBottom: 40 },
-
-  input: {
-    backgroundColor: "#1E1E1E",
-    borderRadius: 12,
-    padding: 16,
-    color: "#fff",
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#333",
-    marginBottom: 16,
-  },
-
-  button: {
-    backgroundColor: "#7B61FF",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-    marginTop: 8,
-  },
-
-  buttonDisabled: { backgroundColor: "#555" },
-
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-
-  forgotText: {
-    color: "#7B61FF",
-    textAlign: "center",
-    fontSize: 14,
-    marginBottom: 6,
-    marginTop: 6,
-  },
-
-  signupText: {
-    color: "#999",
-    textAlign: "center",
-    fontSize: 14,
-    marginBottom: 8,
-  },
-
-  signupLink: {
-    color: "#7B61FF",
-    fontWeight: "600",
-  },
-
-  socialContainer: { marginTop: 40 },
-
-  orText: {
-    textAlign: "center",
-    color: "#999",
-    fontSize: 13,
-    marginBottom: 12,
-  },
-
-  testInfo: {
-    marginTop: 40,
-    padding: 16,
-    backgroundColor: "#1E1E1E",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-
-  testInfoText: { color: "#999", fontSize: 12, marginBottom: 4 },
-});
+const createStyles = (colors, spacing, radius) =>
+  StyleSheet.create({
+    scroll: {
+      flexGrow: 1,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: spacing.xxl,
+      paddingTop: spacing.xxxl,
+      paddingBottom: spacing.xxxl,
+    },
+    signupRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      marginTop: spacing.md,
+    },
+    signupBtn: {
+      paddingHorizontal: 0,
+    },
+    divider: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginVertical: spacing.xxxl,
+    },
+    dividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: colors.border,
+    },
+    testButton: {
+      borderStyle: "dashed",
+      borderWidth: 2,
+      borderColor: colors.primary,
+    },
+    testInfo: {
+      marginTop: spacing.xxxl,
+      padding: spacing.lg,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    testInfoHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: spacing.sm,
+    },
+    mono: {
+      marginBottom: spacing.xs,
+      fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    },
+  });

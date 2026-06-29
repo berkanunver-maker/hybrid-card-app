@@ -1,21 +1,32 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+// screens/CardHolderScreen.js
+import React, { useEffect, useState, useMemo } from "react";
+import { View, StyleSheet, FlatList } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { colors } from "../utils/colors";
+import { useTheme } from "../utils/theme";
+import { useTranslation } from "../i18n/I18nProvider";
+import {
+  ScreenContainer,
+  AppText,
+  SurfaceCard,
+  Badge,
+  EmptyState,
+  Loader,
+  SectionHeader,
+  Icon,
+} from "../components/ui";
 
 // 🔹 Eğer Firestore kullanıyorsan import aktif et
 // import { getUserCards } from "../services/firestoreService";
 
 export default function CardHolderScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation();
+  const { colors, spacing, radius } = useTheme();
+  const styles = useMemo(
+    () => createStyles(colors, spacing, radius),
+    [colors, spacing, radius]
+  );
+
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,148 +64,84 @@ export default function CardHolderScreen() {
 
       setCards(mock);
     } catch (error) {
-      console.error("Kart yükleme hatası:", error);
+      // sessiz geç
     } finally {
       setLoading(false);
     }
   };
 
   const renderCard = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
+    <SurfaceCard
       onPress={() => navigation.navigate("CardDetail", { cardData: item })}
+      accessibilityLabel={`${item.name}, ${item.company}`}
+      style={{ marginBottom: spacing.md }}
     >
-      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.company}>{item.company}</Text>
-          <Text style={styles.email}>{item.email}</Text>
+      <View style={styles.cardRow}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <AppText variant="bodyStrong" numberOfLines={1}>
+            {item.name}
+          </AppText>
+          <AppText
+            variant="caption"
+            color="textSecondary"
+            numberOfLines={1}
+            style={{ marginTop: 2 }}
+          >
+            {item.company}
+          </AppText>
+          <AppText
+            variant="caption"
+            color="textMuted"
+            numberOfLines={1}
+            style={{ marginTop: 2 }}
+          >
+            {item.email}
+          </AppText>
         </View>
-        <Ionicons name="chevron-forward" size={22} color={colors.primary} />
+        <Icon name="chevron-forward" size={22} color={colors.primary} />
       </View>
 
       {item.voice_note?.text && (
-        <View style={styles.voiceTag}>
-          <Ionicons name="mic-outline" size={14} color="#fff" />
-          <Text style={styles.voiceText}>Ses notu ekli</Text>
-        </View>
+        <Badge tone="primary" label={t("lists.voiceNoteAttached")} style={{ marginTop: 10 }} />
       )}
-    </TouchableOpacity>
+    </SurfaceCard>
   );
 
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.text }]}>
-          Kartlar yükleniyor...
-        </Text>
-      </View>
-    );
+    return <Loader visible text={t("lists.loadingCards")} />;
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>📇 Kayıtlı Kartlar</Text>
+    <ScreenContainer padded>
+      <SectionHeader title={t("lists.savedCards")} style={{ marginTop: spacing.md }} />
 
       {cards.length === 0 ? (
-        <View style={styles.center}>
-          <Text style={styles.emptyText}>Henüz kayıtlı bir kart yok.</Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("Camera")}
-            style={styles.newButton}
-          >
-            <Ionicons name="camera" size={20} color={colors.background} />
-            <Text style={styles.newText}>Yeni Kart Tara</Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState
+          icon="documents-outline"
+          title={t("lists.cardHolderEmptyTitle")}
+          description={t("lists.cardHolderEmptyDescription")}
+          actionLabel={t("lists.scanNewCard")}
+          onAction={() => navigation.navigate("Camera")}
+        />
       ) : (
         <FlatList
           data={cards}
           keyExtractor={(item) => item.id}
           renderItem={renderCard}
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 40 }}
         />
       )}
-    </View>
+    </ScreenContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: 16,
-    paddingTop: 20,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 16,
-  },
-  card: {
-    backgroundColor: colors.surface || "#1E1E1E",
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  name: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  company: {
-    color: colors.secondaryText || "#bbb",
-    fontSize: 14,
-    marginTop: 2,
-  },
-  email: {
-    color: colors.secondaryText || "#999",
-    fontSize: 13,
-    marginTop: 2,
-  },
-  voiceTag: {
-    marginTop: 10,
-    backgroundColor: colors.primary,
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  voiceText: {
-    color: "#fff",
-    marginLeft: 4,
-    fontSize: 12,
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyText: {
-    color: colors.text,
-    fontSize: 15,
-    marginBottom: 10,
-  },
-  newButton: {
-    flexDirection: "row",
-    backgroundColor: colors.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  newText: {
-    color: colors.background,
-    marginLeft: 6,
-    fontWeight: "600",
-  },
-  loadingText: {
-    marginTop: 10,
-  },
-});
+const createStyles = (colors, spacing, radius) =>
+  StyleSheet.create({
+    cardRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
+    },
+  });

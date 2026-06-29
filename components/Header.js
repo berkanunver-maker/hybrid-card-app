@@ -1,83 +1,85 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native"; // 🔹 navigation erişimi
-import { colors } from "../utils/colors";
+import { View, Pressable } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "../utils/theme";
+import AppText from "./ui/Text";
+import Icon from "./ui/Icon";
 
 export default function Header({
   title = "",
-  onBackPress,       // StackNavigator'dan gelirse öncelikli
+  onBackPress,
   rightIcon,
   onRightPress,
   style,
   textStyle,
 }) {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const canGoBack = navigation?.canGoBack?.() ?? false; // 🔹 korumalı kontrol
+  const canGoBack = navigation?.canGoBack?.() ?? false;
 
   const handleBack = () => {
-    if (onBackPress) {
-      onBackPress(); // dışarıdan özel fonksiyon geldiyse onu çalıştır
-    } else if (canGoBack) {
-      navigation.goBack(); // aksi halde otomatik geri git
-    }
+    if (onBackPress) onBackPress();
+    else if (canGoBack) navigation.goBack();
   };
 
   return (
-    <View style={[styles.container, style]}>
-      {/* 🔹 Geri Butonu (sadece gerekiyorsa göster) */}
-      {canGoBack || onBackPress ? (
-        <TouchableOpacity style={styles.iconButton} onPress={handleBack}>
-          <Ionicons name="chevron-back" size={24} color={colors.white} />
-        </TouchableOpacity>
-      ) : (
-        <View style={styles.iconPlaceholder} />
-      )}
+    <View
+      style={[
+        {
+          paddingTop: insets.top,
+          backgroundColor: colors.bg,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        },
+        style,
+      ]}
+    >
+      <View
+        style={{
+          height: 52,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 8,
+        }}
+      >
+        {canGoBack || onBackPress ? (
+          <Pressable
+            onPress={handleBack}
+            accessibilityRole="button"
+            accessibilityLabel="Geri"
+            hitSlop={8}
+            style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
+          >
+            <Icon name="chevron-back" size={26} color={colors.text} />
+          </Pressable>
+        ) : (
+          <View style={{ width: 44, height: 44 }} />
+        )}
 
-      {/* 🔹 Başlık */}
-      <Text style={[styles.title, textStyle]} numberOfLines={1}>
-        {title}
-      </Text>
+        <AppText
+          variant="heading"
+          numberOfLines={1}
+          style={[{ flex: 1, textAlign: "center" }, textStyle]}
+        >
+          {title}
+        </AppText>
 
-      {/* 🔹 Sağ İkon (isteğe bağlı) */}
-      {rightIcon ? (
-        <TouchableOpacity style={styles.iconButton} onPress={onRightPress}>
-          <Ionicons name={rightIcon} size={22} color={colors.white} />
-        </TouchableOpacity>
-      ) : (
-        <View style={styles.iconPlaceholder} />
-      )}
+        {rightIcon ? (
+          <Pressable
+            onPress={onRightPress}
+            accessibilityRole="button"
+            hitSlop={8}
+            style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
+          >
+            <Icon name={rightIcon} size={22} color={colors.text} />
+          </Pressable>
+        ) : (
+          <View style={{ width: 44, height: 44 }} />
+        )}
+      </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    height: 56,
-    backgroundColor: colors.primary,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: colors.border,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconPlaceholder: {
-    width: 40,
-    height: 40,
-  },
-  title: {
-    color: colors.white,
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-    textAlign: "center",
-    flex: 1,
-  },
-});

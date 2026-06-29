@@ -1,135 +1,149 @@
 // components/SearchResultCard.js
-import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../utils/colors';
+import React, { useMemo } from "react";
+import { View, StyleSheet } from "react-native";
+import Icon from "./ui/Icon";
+import { useTheme } from "../utils/theme";
+import { useTranslation } from "../i18n/I18nProvider";
+import { getScoreTone } from "../utils/format";
+import { SurfaceCard, AppText, Badge, Monogram } from "./ui";
 
 export default function SearchResultCard({ card, onPress }) {
+  const { colors, radius, spacing } = useTheme();
+  const { t } = useTranslation();
+  const styles = useMemo(
+    () => createStyles(colors, radius, spacing),
+    [colors, radius, spacing]
+  );
+
   const fields = card.fields || card;
-  const name = fields.name || card.name || 'İsimsiz';
-  const company = fields.company || card.company || 'Şirket bilgisi yok';
-  const title = fields.title || card.title || '';
-  const service = fields.service || card.service || '';
+  const name = fields.name || card.name || t("search.unnamed");
+  const companyRaw = fields.company || card.company || "";
+  const company = companyRaw || t("search.noCompany");
+  const title = fields.title || card.title || "";
+  const service = fields.service || card.service || "";
   const isFavorite = card.isFavorite || false;
   const qaScore = card.qaScore || 0;
 
-  // QA Score rengini belirle
-  const getQAColor = (score) => {
-    if (score >= 80) return colors.success;
-    if (score >= 60) return colors.warning;
-    return colors.error;
-  };
-
   return (
-    <TouchableOpacity 
-      style={styles.container} 
+    <SurfaceCard
       onPress={onPress}
-      activeOpacity={0.7}
+      accessibilityLabel={`${name}, ${company}`}
+      style={styles.container}
     >
-      <View style={styles.iconContainer}>
-        <Ionicons name="person" size={24} color={colors.primary} />
-      </View>
+      <Monogram name={name} company={companyRaw} size={48} style={{ marginRight: spacing.md }} />
 
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.name} numberOfLines={1}>
+          <AppText variant="bodyStrong" numberOfLines={1} style={styles.name}>
             {name}
-          </Text>
+          </AppText>
           {isFavorite && (
-            <Ionicons name="star" size={16} color="#FFD700" style={styles.favoriteIcon} />
+            <Icon
+              name="star"
+              size={16}
+              color={colors.star}
+              style={styles.favoriteIcon}
+              accessibilityLabel="Favori"
+            />
           )}
         </View>
 
-        <Text style={styles.company} numberOfLines={1}>
-          🏢 {company}
-        </Text>
+        <View style={styles.metaRow}>
+          <Icon name="business-outline" size={14} color={colors.textSecondary} />
+          <AppText
+            variant="caption"
+            color="textSecondary"
+            numberOfLines={1}
+            style={styles.metaText}
+          >
+            {company}
+          </AppText>
+        </View>
 
-        {title && (
-          <Text style={styles.detail} numberOfLines={1}>
-            💼 {title}
-          </Text>
-        )}
-
-        {service && (
-          <Text style={styles.detail} numberOfLines={1}>
-            🛠️ {service}
-          </Text>
-        )}
-
-        {qaScore > 0 && (
-          <View style={styles.qaContainer}>
-            <Text style={[styles.qaScore, { color: getQAColor(qaScore) }]}>
-              QA: {qaScore}%
-            </Text>
+        {title ? (
+          <View style={styles.metaRow}>
+            <Icon name="briefcase-outline" size={14} color={colors.textMuted} />
+            <AppText
+              variant="caption"
+              color="textMuted"
+              numberOfLines={1}
+              style={styles.metaText}
+            >
+              {title}
+            </AppText>
           </View>
-        )}
+        ) : null}
+
+        {service ? (
+          <View style={styles.metaRow}>
+            <Icon name="construct-outline" size={14} color={colors.textMuted} />
+            <AppText
+              variant="caption"
+              color="textMuted"
+              numberOfLines={1}
+              style={styles.metaText}
+            >
+              {service}
+            </AppText>
+          </View>
+        ) : null}
+
+        {qaScore > 0 ? (
+          <Badge
+            tone={getScoreTone(qaScore)}
+            label={`QA ${qaScore}%`}
+            style={styles.qaBadge}
+          />
+        ) : null}
       </View>
 
-      <Ionicons 
-        name="chevron-forward" 
-        size={20} 
-        color={colors.textSecondary} 
-      />
-    </TouchableOpacity>
+      <Icon name="chevron-forward" size={20} color={colors.textMuted} />
+    </SurfaceCard>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.cardBackground,
-    padding: 16,
-    borderRadius: 12,
-    marginHorizontal: 20,
-    marginBottom: 12,
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  content: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    flex: 1,
-  },
-  favoriteIcon: {
-    marginLeft: 8,
-  },
-  company: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  detail: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginBottom: 2,
-  },
-  qaContainer: {
-    marginTop: 4,
-  },
-  qaScore: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-});
+const createStyles = (colors, radius, spacing) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginHorizontal: spacing.xl,
+      marginBottom: spacing.md,
+    },
+    iconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.pill,
+      backgroundColor: colors.primaryMuted,
+      justifyContent: "center",
+      alignItems: "center",
+      marginRight: spacing.md,
+    },
+    content: {
+      flex: 1,
+      minWidth: 0,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 4,
+    },
+    name: {
+      flex: 1,
+    },
+    favoriteIcon: {
+      marginLeft: spacing.sm,
+    },
+    metaRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginBottom: 2,
+    },
+    metaText: {
+      flex: 1,
+    },
+    qaBadge: {
+      marginTop: 6,
+    },
+  });

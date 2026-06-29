@@ -1,24 +1,37 @@
 // screens/StatsScreen.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
+  Pressable,
   Dimensions,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { colors } from "../utils/colors";
+import { useTheme } from "../utils/theme";
+import { useTranslation } from "../i18n/I18nProvider";
 import { FirestoreService } from "../services/firestoreService";
 import { getAuth } from "firebase/auth";
+import {
+  ScreenContainer,
+  AppText,
+  SurfaceCard,
+  SectionHeader,
+  Loader,
+  Icon,
+} from "../components/ui";
 
 const { width } = Dimensions.get("window");
 
 export default function StatsScreen() {
   const navigation = useNavigation();
+  const { colors, spacing, radius, shadows } = useTheme();
+  const { t } = useTranslation();
+  const styles = useMemo(
+    () => createStyles(colors, spacing, radius, shadows),
+    [colors, spacing, radius, shadows]
+  );
+
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalCards: 0,
@@ -41,10 +54,10 @@ export default function StatsScreen() {
 
       // Tüm kartları çek
       const allCards = await FirestoreService.getAllUserCards(userId);
-      
+
       // Kategorileri çek
       const categories = await FirestoreService.getUserCategories(userId);
-      
+
       // Favori kartları çek
       const favorites = await FirestoreService.getFavoriteCards(userId);
 
@@ -72,7 +85,7 @@ export default function StatsScreen() {
         .map(cat => ({ name: cat.name, icon: cat.icon, count: cat.cardCount || 0 }))
         .filter(cat => cat.count > 0)
         .sort((a, b) => b.count - a.count);
-      
+
       const mostActive = categoryCardCounts.length > 0 ? categoryCardCounts[0] : null;
 
       setStats({
@@ -86,7 +99,7 @@ export default function StatsScreen() {
         categoryDistribution: categoryCardCounts.slice(0, 5), // İlk 5 kategori
       });
     } catch (error) {
-      console.error("❌ İstatistikler yüklenemedi:", error);
+      // İstatistikler yüklenemedi
     } finally {
       setLoading(false);
     }
@@ -100,13 +113,15 @@ export default function StatsScreen() {
 
   // Stat Card Component
   const StatCard = ({ icon, label, value, color = colors.primary }) => (
-    <View style={styles.statCard}>
+    <SurfaceCard style={styles.statCard}>
       <View style={[styles.statIconContainer, { backgroundColor: color + "20" }]}>
-        <Ionicons name={icon} size={24} color={color} />
+        <Icon name={icon} size={24} color={color} />
       </View>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
+      <AppText variant="title">{value}</AppText>
+      <AppText variant="caption" color="textSecondary" style={{ marginTop: spacing.xs }}>
+        {label}
+      </AppText>
+    </SurfaceCard>
   );
 
   // Category Bar Component
@@ -116,18 +131,18 @@ export default function StatsScreen() {
       <View style={styles.categoryBarContainer}>
         <View style={styles.categoryBarHeader}>
           <View style={styles.categoryBarLeft}>
-            <Text style={styles.categoryBarIcon}>{category.icon}</Text>
-            <Text style={styles.categoryBarName}>{category.name}</Text>
+            {/* category.icon kullanıcı verisi — olduğu gibi bırakılır */}
+            <AppText style={styles.categoryBarIcon}>{category.icon}</AppText>
+            <AppText variant="label" numberOfLines={1} style={{ flex: 1 }}>
+              {category.name}
+            </AppText>
           </View>
-          <Text style={styles.categoryBarCount}>{category.count} kart</Text>
+          <AppText variant="caption" color="textSecondary">
+            {t("tools.cardCount", { count: category.count })}
+          </AppText>
         </View>
         <View style={styles.categoryBarTrack}>
-          <View 
-            style={[
-              styles.categoryBarFill, 
-              { width: `${percentage}%` }
-            ]} 
-          />
+          <View style={[styles.categoryBarFill, { width: `${percentage}%` }]} />
         </View>
       </View>
     );
@@ -135,330 +150,263 @@ export default function StatsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>İstatistikler yükleniyor...</Text>
-      </View>
+      <ScreenContainer>
+        <Loader visible text={t("tools.statsLoading")} />
+      </ScreenContainer>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <ScreenContainer>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>İstatistikler</Text>
-        <View style={{ width: 24 }} />
+        <Pressable
+          onPress={() => navigation.goBack()}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Geri"
+          style={styles.backBtn}
+        >
+          <Icon name="arrow-back" size={24} color={colors.text} />
+        </Pressable>
+        <AppText variant="title">{t("tools.statsTitle")}</AppText>
+        <View style={styles.backBtn} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
         {/* Genel İstatistikler */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📊 GENEL</Text>
+          <SectionHeader title={t("tools.sectionGeneral")} />
           <View style={styles.statsGrid}>
-            <StatCard 
-              icon="albums" 
-              label="Toplam Kart" 
+            <StatCard
+              icon="albums"
+              label={t("tools.statTotalCards")}
               value={stats.totalCards}
               color={colors.primary}
             />
-            <StatCard 
-              icon="folder" 
-              label="Klasör" 
+            <StatCard
+              icon="folder"
+              label={t("tools.statFolders")}
               value={stats.totalCategories}
-              color="#FF9500"
+              color={colors.warning}
             />
-            <StatCard 
-              icon="star" 
-              label="Favori" 
+            <StatCard
+              icon="star"
+              label={t("tools.statFavorites")}
               value={stats.favoriteCards}
-              color="#FFD700"
+              color={colors.star}
             />
-            <StatCard 
-              icon="mic" 
-              label="Ses Notu" 
+            <StatCard
+              icon="mic"
+              label={t("tools.statVoiceNotes")}
               value={stats.cardsWithVoiceNotes}
-              color="#34C759"
+              color={colors.success}
             />
           </View>
         </View>
 
         {/* Bu Ay */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📈 BU AY</Text>
-          <View style={styles.monthCard}>
+          <SectionHeader title={t("tools.sectionThisMonth")} />
+          <SurfaceCard style={styles.monthCard}>
             <View style={styles.monthRow}>
               <View style={styles.monthItem}>
-                <Text style={styles.monthValue}>{stats.cardsThisMonth}</Text>
-                <Text style={styles.monthLabel}>Yeni Kart</Text>
+                <AppText variant="display" color="primary">
+                  {stats.cardsThisMonth}
+                </AppText>
+                <AppText variant="label" color="textSecondary" style={{ marginTop: spacing.xs }}>
+                  {t("tools.newCard")}
+                </AppText>
               </View>
               <View style={styles.monthDivider} />
               <View style={styles.monthItem}>
-                <Text style={styles.monthValue}>{stats.cardsThisWeek}</Text>
-                <Text style={styles.monthLabel}>Bu Hafta</Text>
+                <AppText variant="display" color="primary">
+                  {stats.cardsThisWeek}
+                </AppText>
+                <AppText variant="label" color="textSecondary" style={{ marginTop: spacing.xs }}>
+                  {t("tools.thisWeek")}
+                </AppText>
               </View>
             </View>
 
             {stats.mostActiveCategory && (
               <View style={styles.mostActiveContainer}>
-                <Text style={styles.mostActiveLabel}>En Aktif Klasör:</Text>
+                <AppText variant="caption" color="textSecondary" style={{ marginBottom: spacing.sm }}>
+                  {t("tools.mostActiveFolder")}
+                </AppText>
                 <View style={styles.mostActiveCategory}>
-                  <Text style={styles.mostActiveCategoryIcon}>
+                  {/* mostActiveCategory.icon kullanıcı verisi — olduğu gibi bırakılır */}
+                  <AppText style={styles.mostActiveCategoryIcon}>
                     {stats.mostActiveCategory.icon}
-                  </Text>
-                  <Text style={styles.mostActiveCategoryName}>
+                  </AppText>
+                  <AppText variant="heading" style={{ marginRight: spacing.xs }}>
                     {stats.mostActiveCategory.name}
-                  </Text>
-                  <Text style={styles.mostActiveCategoryCount}>
-                    ({stats.mostActiveCategory.count} kart)
-                  </Text>
+                  </AppText>
+                  <AppText variant="caption" color="textSecondary">
+                    {t("tools.cardCountParens", { count: stats.mostActiveCategory.count })}
+                  </AppText>
                 </View>
               </View>
             )}
-          </View>
+          </SurfaceCard>
         </View>
 
         {/* Kategori Dağılımı */}
         {stats.categoryDistribution && stats.categoryDistribution.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📁 KATEGORİ DAĞILIMI</Text>
-            <View style={styles.categoryDistribution}>
+            <SectionHeader title={t("tools.sectionCategoryDistribution")} />
+            <SurfaceCard style={styles.categoryDistribution}>
               {stats.categoryDistribution.map((category, index) => (
-                <CategoryBar 
-                  key={index} 
+                <CategoryBar
+                  key={index}
                   category={category}
                   maxCount={stats.categoryDistribution[0]?.count || 1}
                 />
               ))}
-            </View>
+            </SurfaceCard>
           </View>
         )}
 
         {/* Öneriler */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>💡 ÖNERİLER</Text>
-          <View style={styles.suggestionCard}>
-            <Ionicons name="bulb-outline" size={24} color="#FF9500" />
+          <SectionHeader title={t("tools.sectionSuggestions")} />
+          <SurfaceCard style={styles.suggestionCard}>
+            <Icon name="bulb-outline" size={24} color={colors.warning} />
             <View style={styles.suggestionContent}>
-              <Text style={styles.suggestionText}>
+              <AppText variant="body">
                 {stats.favoriteCards === 0
-                  ? "Henüz favori kartınız yok. Önemli kartları favorilere ekleyin!"
+                  ? t("tools.suggestionNoFavorites")
                   : stats.cardsWithVoiceNotes === 0
-                  ? "Kartlarınıza ses notu ekleyerek daha fazla bilgi saklayın!"
+                  ? t("tools.suggestionNoVoiceNotes")
                   : stats.cardsThisMonth === 0
-                  ? "Bu ay henüz kart eklemediniz. Yeni kartlar taramaya başlayın!"
-                  : "Harika gidiyorsunuz! Kartlarınızı düzenli tutmaya devam edin."}
-              </Text>
+                  ? t("tools.suggestionNoCardsThisMonth")
+                  : t("tools.suggestionGreat")}
+              </AppText>
             </View>
-          </View>
+          </SurfaceCard>
         </View>
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-    backgroundColor: colors.background,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: colors.text,
-  },
-  scrollContent: {
-    paddingBottom: 40,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: colors.background,
-  },
-  loadingText: {
-    color: colors.secondaryText,
-    marginTop: 12,
-  },
-  
-  // Sections
-  section: {
-    marginBottom: 24,
-    paddingHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: colors.secondaryText,
-    marginBottom: 12,
-  },
-  
-  // Stat Cards
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    minWidth: (width - 52) / 2, // 2 columns
-    backgroundColor: colors.cardBackground || "#1C1C1E",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-  },
-  statIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: colors.text,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: colors.secondaryText,
-  },
-  
-  // Month Card
-  monthCard: {
-    backgroundColor: colors.cardBackground || "#1C1C1E",
-    borderRadius: 12,
-    padding: 16,
-  },
-  monthRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  monthItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-  monthValue: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: colors.primary,
-    marginBottom: 4,
-  },
-  monthLabel: {
-    fontSize: 14,
-    color: colors.secondaryText,
-  },
-  monthDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: colors.border || "#2C2C2E",
-  },
-  mostActiveContainer: {
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.border || "#2C2C2E",
-  },
-  mostActiveLabel: {
-    fontSize: 12,
-    color: colors.secondaryText,
-    marginBottom: 8,
-  },
-  mostActiveCategory: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  mostActiveCategoryIcon: {
-    fontSize: 20,
-    marginRight: 8,
-  },
-  mostActiveCategoryName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.text,
-    marginRight: 4,
-  },
-  mostActiveCategoryCount: {
-    fontSize: 14,
-    color: colors.secondaryText,
-  },
-  
-  // Category Distribution
-  categoryDistribution: {
-    backgroundColor: colors.cardBackground || "#1C1C1E",
-    borderRadius: 12,
-    padding: 16,
-  },
-  categoryBarContainer: {
-    marginBottom: 16,
-  },
-  categoryBarHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  categoryBarLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  categoryBarIcon: {
-    fontSize: 20,
-    marginRight: 8,
-  },
-  categoryBarName: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.text,
-  },
-  categoryBarCount: {
-    fontSize: 12,
-    color: colors.secondaryText,
-  },
-  categoryBarTrack: {
-    height: 6,
-    backgroundColor: colors.background,
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  categoryBarFill: {
-    height: "100%",
-    backgroundColor: colors.primary,
-    borderRadius: 3,
-  },
-  
-  // Suggestions
-  suggestionCard: {
-    flexDirection: "row",
-    backgroundColor: colors.cardBackground || "#1C1C1E",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "flex-start",
-  },
-  suggestionContent: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  suggestionText: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
-  },
-});
+const createStyles = (colors, spacing, radius, shadows) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.lg,
+    },
+    backBtn: {
+      width: 44,
+      height: 44,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    scrollContent: {
+      paddingBottom: spacing.xxxxl,
+    },
+
+    // Sections
+    section: {
+      marginBottom: spacing.xxl,
+      paddingHorizontal: spacing.xl,
+    },
+
+    // Stat Cards
+    statsGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.md,
+    },
+    statCard: {
+      flex: 1,
+      minWidth: (width - 52) / 2, // 2 columns
+      alignItems: "center",
+    },
+    statIconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.pill,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: spacing.sm,
+    },
+
+    // Month Card
+    monthCard: {},
+    monthRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: spacing.lg,
+    },
+    monthItem: {
+      flex: 1,
+      alignItems: "center",
+    },
+    monthDivider: {
+      width: 1,
+      height: 40,
+      backgroundColor: colors.border,
+    },
+    mostActiveContainer: {
+      paddingTop: spacing.lg,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    mostActiveCategory: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    mostActiveCategoryIcon: {
+      fontSize: 20,
+      marginRight: spacing.sm,
+    },
+
+    // Category Distribution
+    categoryDistribution: {},
+    categoryBarContainer: {
+      marginBottom: spacing.lg,
+    },
+    categoryBarHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: spacing.sm,
+    },
+    categoryBarLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+      gap: spacing.sm,
+    },
+    categoryBarIcon: {
+      fontSize: 20,
+    },
+    categoryBarTrack: {
+      height: 6,
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: radius.sm,
+      overflow: "hidden",
+    },
+    categoryBarFill: {
+      height: "100%",
+      backgroundColor: colors.primary,
+      borderRadius: radius.sm,
+    },
+
+    // Suggestions
+    suggestionCard: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+    },
+    suggestionContent: {
+      flex: 1,
+      marginLeft: spacing.md,
+    },
+  });

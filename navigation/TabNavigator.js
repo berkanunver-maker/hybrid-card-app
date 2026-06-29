@@ -1,15 +1,21 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../utils/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "../utils/theme";
+import { Icon } from "../components/ui";
+import { useTranslation } from "../i18n/I18nProvider";
 
 // 📄 Ekranlar
 import HomeScreen from "../screens/HomeScreen";
-import ProfileSetupScreen from "../screens/ProfileSetupScreen";
+import ProfileScreen from "../screens/ProfileScreen";
 
 const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       initialRouteName="Home"
@@ -20,19 +26,20 @@ export default function TabNavigator() {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + insets.bottom,
+          paddingBottom: 8 + insets.bottom,
+          paddingTop: 8,
         },
         tabBarIcon: ({ color, size }) => {
           let iconName;
           if (route.name === "Home") iconName = "home-outline";
           else if (route.name === "Profile") iconName = "person-outline";
-          return <Ionicons name={iconName} size={size} color={color} />;
+          return <Icon name={iconName} size={size} color={color} />;
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: "Ana Sayfa" }} />
-      <Tab.Screen name="Profile" component={ProfileSetupScreen} options={{ title: "Profil" }} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: t("home.tabHome") }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: t("home.tabProfile") }} />
     </Tab.Navigator>
   );
 }

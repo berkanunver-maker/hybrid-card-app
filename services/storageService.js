@@ -8,8 +8,60 @@ const storage = getStorage(app);
 // File validation constants
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_AUDIO_SIZE = 25 * 1024 * 1024; // 25MB
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-const ALLOWED_AUDIO_TYPES = ['audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/m4a', 'audio/wav', 'audio/ogg'];
+
+// ✅ Allowed extensions (daha güvenilir)
+const ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+const ALLOWED_AUDIO_EXTENSIONS = ['mp3', 'm4a', 'mp4', 'wav', 'ogg', 'mpeg'];
+
+/**
+ * 🎵 Dosya uzantısından normalize edilmiş MIME type al
+ * Platform bağımsız çalışır (iOS, Android, Web)
+ */
+const normalizeMimeType = (uri, blobType) => {
+  // URI'den extension al
+  const extension = uri.split('.').pop()?.toLowerCase();
+  
+  if (!extension) {
+    return blobType; // Fallback to blob type
+  }
+
+  // Extension'a göre normalize MIME type döndür
+  const mimeTypeMap = {
+    // Audio types
+    'mp3': 'audio/mpeg',
+    'mpeg': 'audio/mpeg',
+    'm4a': 'audio/mp4',  // Normalize all m4a variants
+    'mp4': 'audio/mp4',
+    'wav': 'audio/wav',
+    'ogg': 'audio/ogg',
+    
+    // Image types
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'webp': 'image/webp'
+  };
+
+  return mimeTypeMap[extension] || blobType;
+};
+
+/**
+ * 🔍 Dosya türünü belirle (extension-based)
+ */
+const getFileType = (uri) => {
+  const extension = uri.split('.').pop()?.toLowerCase();
+  
+  if (ALLOWED_AUDIO_EXTENSIONS.includes(extension)) {
+    return 'audio';
+  }
+  
+  if (ALLOWED_IMAGE_EXTENSIONS.includes(extension)) {
+    return 'image';
+  }
+  
+  return null;
+};
 
 /**
  * Validate file path to prevent path traversal attacks
@@ -25,7 +77,7 @@ const validatePath = (path) => {
   }
 
   // Must start with allowed prefixes
-  const allowedPrefixes = ['cards/', 'voice-notes/', 'profiles/'];
+  const allowedPrefixes = ['cards/', 'voices/', 'profiles/'];
   if (!allowedPrefixes.some(prefix => path.startsWith(prefix))) {
     throw new Error(`Invalid path: must start with one of ${allowedPrefixes.join(', ')}`);
   }
@@ -34,22 +86,31 @@ const validatePath = (path) => {
 };
 
 /**
- * Validate file size and type
+ * ✅ Validate file size and extension
  */
-const validateFile = (blob, path) => {
-  const fileType = blob.type.toLowerCase();
-
-  // Determine if this is an image or audio based on path or type
-  const isImage = path.startsWith('cards/') || path.startsWith('profiles/') || fileType.startsWith('image/');
-  const isAudio = path.startsWith('voice-notes/') || fileType.startsWith('audio/');
-
-  // Validate file type
-  if (isImage && !ALLOWED_IMAGE_TYPES.includes(fileType)) {
-    throw new Error(`Invalid image type: ${fileType}. Allowed types: ${ALLOWED_IMAGE_TYPES.join(', ')}`);
+const validateFile = (blob, path, uri, normalizedMimeType) => {
+  // Extension'dan file type belirle
+  const fileType = getFileType(uri);
+  
+  if (!fileType) {
+    const extension = uri.split('.').pop()?.toLowerCase();
+    throw new Error(
+      `Unsupported file type: .${extension}\n` +
+      `Allowed image types: ${ALLOWED_IMAGE_EXTENSIONS.join(', ')}\n` +
+      `Allowed audio types: ${ALLOWED_AUDIO_EXTENSIONS.join(', ')}`
+    );
   }
 
-  if (isAudio && !ALLOWED_AUDIO_TYPES.includes(fileType)) {
-    throw new Error(`Invalid audio type: ${fileType}. Allowed types: ${ALLOWED_AUDIO_TYPES.join(', ')}`);
+  // Path ile file type uyumlu mu?
+  const isImage = fileType === 'image';
+  const isAudio = fileType === 'audio';
+  
+  if (isImage && !path.startsWith('cards/') && !path.startsWith('profiles/')) {
+    throw new Error('Image files must be uploaded to cards/ or profiles/ directories');
+  }
+  
+  if (isAudio && !path.startsWith('voices/')) {
+    throw new Error('Audio files must be uploaded to voices/ directory');
   }
 
   // Validate file size
@@ -60,11 +121,15 @@ const validateFile = (blob, path) => {
     throw new Error(`File too large: ${actualSizeMB}MB. Maximum allowed: ${maxSizeMB}MB`);
   }
 
+  if (__DEV__) {
+    console.log(`✅ File validated - Type: ${fileType}, Size: ${(blob.size / 1024).toFixed(2)}KB, MIME: ${normalizedMimeType}`);
+  }
+
   return true;
 };
 
 /**
- * 📤 Fotoğraf yükle (Expo uyumlu) - with validation
+ * 📤 Fotoğraf/Ses dosyası yükle (Expo uyumlu) - with validation
  */
 export const uploadFile = async ({ uri, path }) => {
   try {
@@ -84,22 +149,37 @@ export const uploadFile = async ({ uri, path }) => {
     }
 
     const blob = await response.blob();
+    
+    // 🎵 MIME type'ı normalize et (platform bağımsız)
+    const normalizedMimeType = normalizeMimeType(uri, blob.type);
 
     if (__DEV__) {
-      console.log("📸 Blob oluşturuldu, boyut:", blob.size, "type:", blob.type);
+      console.log("📸 Blob oluşturuldu");
+      console.log("  - Boyut:", (blob.size / 1024).toFixed(2), "KB");
+      console.log("  - Original MIME:", blob.type);
+      console.log("  - Normalized MIME:", normalizedMimeType);
     }
 
     // Validate file
-    validateFile(blob, path);
+    validateFile(blob, path, uri, normalizedMimeType);
 
     // 🔹 Storage referansı oluştur
     const fileRef = ref(storage, path);
+
+    // 📋 Metadata ekle
+    const metadata = {
+      contentType: normalizedMimeType,
+      customMetadata: {
+        uploadedAt: new Date().toISOString(),
+        originalMimeType: blob.type // Debug için orijinal type'ı sakla
+      }
+    };
 
     // 🔹 Dosyayı yükle
     if (__DEV__) {
       console.log("📸 Firebase'e yükleniyor...");
     }
-    await uploadBytes(fileRef, blob);
+    await uploadBytes(fileRef, blob, metadata);
 
     // 🔹 URL al
     const url = await getDownloadURL(fileRef);

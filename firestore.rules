@@ -3,7 +3,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // ── Yardımcılar ─────────────────────────────────────────────────────────
     function isSignedIn() {
       return request.auth != null;
     }
@@ -22,88 +22,130 @@ service cloud.firestore {
              text.size() <= maxLen;
     }
 
-    // Users Collection
+    // ── Org (çok-kiracılı) yardımcıları ─────────────────────────────────────
+    // memberships/{orgId_uid} dokümanı üyeliği ve rolü tutar (Faz 2'de Cloud
+    // Functions tarafından yazılır; şu an yoklar → helper'lar güvenle false döner).
+    function membershipPath(orgId) {
+      return /databases/$(database)/documents/memberships/$(orgId + '_' + request.auth.uid);
+    }
+    function isActiveMember(orgId) {
+      return isSignedIn()
+        && exists(membershipPath(orgId))
+        && get(membershipPath(orgId)).data.status == 'active';
+    }
+    function isOrgAdmin(orgId) {
+      return isActiveMember(orgId)
+        && get(membershipPath(orgId)).data.role in ['owner', 'admin'];
+    }
+    // Kişisel org = "personal:<uid>" (tek üyeli org)
+    function isPersonalOrg(orgId) {
+      return orgId == ('personal:' + request.auth.uid);
+    }
+    // Okuma erişimi: kişisel sahibi VEYA org üyesi (şirket içi tüm kartlar açık)
+    function canReadOrg(orgId) {
+      return orgId is string && (isPersonalOrg(orgId) || isActiveMember(orgId));
+    }
+    // Yazma için geçerli org: kişisel kendi org'u VEYA üye olunan şirket org'u
+    function validWriteOrg(orgId) {
+      return orgId is string && (isPersonalOrg(orgId) || isActiveMember(orgId));
+    }
+    // Bir alan bu update'te değişiyor mu?
+    function changed(field) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasAny([field]);
+    }
+
+    // ── Users ───────────────────────────────────────────────────────────────
     match /users/{userId} {
-      // Users can read and write only their own profile
       allow read, write: if isOwner(userId);
-
-      // Validate user data on create/update
-      allow create, update: if isOwner(userId) &&
-        request.resource.data.keys().hasAll(['email', 'displayName']) &&
-        isValidEmail(request.resource.data.email) &&
-        isValidString(request.resource.data.displayName, 1, 100);
     }
 
-    // Categories Collection
+    // ── Categories ──────────────────────────────────────────────────────────
     match /categories/{categoryId} {
-      // Users can only access their own categories
-      allow read, delete: if isSignedIn() &&
-        resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        (resource.data.orgId != null && canReadOrg(resource.data.orgId))
+      );
 
-      // Validate category data on create
-      allow create: if isSignedIn() &&
-        request.resource.data.userId == request.auth.uid &&
-        request.resource.data.keys().hasAll(['name', 'userId', 'createdAt']) &&
-        isValidString(request.resource.data.name, 1, 100);
+      allow delete: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        (resource.data.orgId != null && isOrgAdmin(resource.data.orgId))
+      );
 
-      // Validate category data on update
-      allow update: if isSignedIn() &&
-        resource.data.userId == request.auth.uid &&
-        request.resource.data.userId == request.auth.uid &&
-        isValidString(request.resource.data.name, 1, 100);
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasAll(['name', 'userId', 'createdAt'])
+        && isValidString(request.resource.data.name, 1, 100)
+        && (!request.resource.data.keys().hasAny(['ownerId']) || request.resource.data.ownerId == request.auth.uid)
+        && (!request.resource.data.keys().hasAny(['orgId']) || validWriteOrg(request.resource.data.orgId));
+
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid
+        && (!changed('name') || isValidString(request.resource.data.name, 1, 100))
+        && (!changed('ownerId') || request.resource.data.ownerId == request.auth.uid)
+        && (!changed('orgId') || validWriteOrg(request.resource.data.orgId));
     }
 
-    // Cards Collection
+    // ── Cards ───────────────────────────────────────────────────────────────
     match /cards/{cardId} {
-      // Users can only access their own cards
-      allow read, delete: if isSignedIn() &&
-        resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        (resource.data.orgId != null && canReadOrg(resource.data.orgId))
+      );
 
-      // Validate card data on create
-      allow create: if isSignedIn() &&
-        request.resource.data.userId == request.auth.uid &&
-        request.resource.data.keys().hasAll(['userId', 'createdAt']) &&
-        // Optional fields validation
-        (!request.resource.data.keys().hasAny(['name']) || isValidString(request.resource.data.name, 0, 200)) &&
-        (!request.resource.data.keys().hasAny(['email']) || isValidEmail(request.resource.data.email)) &&
-        (!request.resource.data.keys().hasAny(['phone']) || isValidString(request.resource.data.phone, 0, 50)) &&
-        (!request.resource.data.keys().hasAny(['company']) || isValidString(request.resource.data.company, 0, 200)) &&
-        (!request.resource.data.keys().hasAny(['title']) || isValidString(request.resource.data.title, 0, 200)) &&
-        (!request.resource.data.keys().hasAny(['address']) || isValidString(request.resource.data.address, 0, 500));
+      allow delete: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        (resource.data.orgId != null && isOrgAdmin(resource.data.orgId))
+      );
 
-      // Validate card data on update
-      allow update: if isSignedIn() &&
-        resource.data.userId == request.auth.uid &&
-        request.resource.data.userId == request.auth.uid &&
-        // Optional fields validation
-        (!request.resource.data.keys().hasAny(['name']) || isValidString(request.resource.data.name, 0, 200)) &&
-        (!request.resource.data.keys().hasAny(['email']) || isValidEmail(request.resource.data.email)) &&
-        (!request.resource.data.keys().hasAny(['phone']) || isValidString(request.resource.data.phone, 0, 50)) &&
-        (!request.resource.data.keys().hasAny(['company']) || isValidString(request.resource.data.company, 0, 200)) &&
-        (!request.resource.data.keys().hasAny(['title']) || isValidString(request.resource.data.title, 0, 200)) &&
-        (!request.resource.data.keys().hasAny(['address']) || isValidString(request.resource.data.address, 0, 500));
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasAll(['userId', 'createdAt'])
+        && (!request.resource.data.keys().hasAny(['ownerId']) || request.resource.data.ownerId == request.auth.uid)
+        && (!request.resource.data.keys().hasAny(['orgId']) || validWriteOrg(request.resource.data.orgId))
+        && (!request.resource.data.keys().hasAny(['name']) || isValidString(request.resource.data.name, 0, 200))
+        && (!request.resource.data.keys().hasAny(['email']) || request.resource.data.email == '' || isValidEmail(request.resource.data.email))
+        && (!request.resource.data.keys().hasAny(['phone']) || isValidString(request.resource.data.phone, 0, 50))
+        && (!request.resource.data.keys().hasAny(['company']) || isValidString(request.resource.data.company, 0, 200))
+        && (!request.resource.data.keys().hasAny(['title']) || isValidString(request.resource.data.title, 0, 200))
+        && (!request.resource.data.keys().hasAny(['address']) || isValidString(request.resource.data.address, 0, 500));
+
+      // Update: sahibi düzenler; yalnızca DEĞİŞEN alan doğrulanır (backfill + kısmi
+      // güncellemeler güvenle geçer; boş e-postaya tolerans).
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid
+        && (!changed('ownerId') || request.resource.data.ownerId == request.auth.uid)
+        && (!changed('orgId') || validWriteOrg(request.resource.data.orgId))
+        && (!changed('name') || isValidString(request.resource.data.name, 0, 200))
+        && (!changed('email') || request.resource.data.email == '' || isValidEmail(request.resource.data.email))
+        && (!changed('phone') || isValidString(request.resource.data.phone, 0, 50))
+        && (!changed('company') || isValidString(request.resource.data.company, 0, 200))
+        && (!changed('title') || isValidString(request.resource.data.title, 0, 200))
+        && (!changed('address') || isValidString(request.resource.data.address, 0, 500));
     }
 
-    // Fairs Collection
+    // ── Fairs (mevcut davranış korunur) ─────────────────────────────────────
     match /fairs/{fairId} {
-      // Users can only access their own fairs
       allow read, delete: if isSignedIn() &&
         resource.data.userId == request.auth.uid;
 
-      // Validate fair data on create
       allow create: if isSignedIn() &&
         request.resource.data.userId == request.auth.uid &&
         request.resource.data.keys().hasAll(['name', 'userId', 'createdAt']) &&
         isValidString(request.resource.data.name, 1, 200);
 
-      // Validate fair data on update
       allow update: if isSignedIn() &&
         resource.data.userId == request.auth.uid &&
         request.resource.data.userId == request.auth.uid &&
         isValidString(request.resource.data.name, 1, 200);
     }
 
-    // Deny all other access by default
+    // ── Org koleksiyonları (organizations / memberships / invites / activity /
+    // devices): istemci YAZAMAZ. Faz 2'de Cloud Functions (Admin SDK) yazacak;
+    // üye okuma izinleri o zaman eklenecek. Şimdilik tamamen kapalı. ───────────
+
+    // Varsayılan: diğer her şeyi reddet
     match /{document=**} {
       allow read, write: if false;
     }

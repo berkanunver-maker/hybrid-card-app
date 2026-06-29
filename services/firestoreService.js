@@ -1,6 +1,6 @@
 // services/firestoreService.js
 import { initializeApp, getApps } from "firebase/app";
-import { initializeAuth, getReactNativePersistence } from "firebase/auth";
+import { initializeAuth, getAuth } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   getFirestore,
@@ -19,6 +19,7 @@ import {
   limit,
 } from "firebase/firestore";
 import { getAnalytics, isSupported } from "firebase/analytics";
+import { personalOrgId } from "../utils/org";
 
 // 🔹 Firebase konfigürasyonu (Environment Variables'dan)
 const firebaseConfig = {
@@ -37,16 +38,45 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 // 🔹 Firestore referansı
 const db = getFirestore(app);
 
+// 🔹 React Native AsyncStorage persistence
+// firebase-js-sdk v12'de `getReactNativePersistence` kaldırıldı (RN için hiçbir
+// persistence helper'ı export edilmiyor). Aşağıdaki shim, kaldırılan fonksiyonun
+// birebir aynısı: AsyncStorage'ı Firebase'in Persistence arayüzüne sarar.
+// initializeAuth bu sınıfı `new` ile örnekler, bu yüzden bir CLASS döndürmeliyiz.
+const getReactNativePersistence = (storage) =>
+  class {
+    static type = "LOCAL";
+    type = "LOCAL";
+    async _isAvailable() {
+      return true;
+    }
+    _set(key, value) {
+      return storage.setItem(key, JSON.stringify(value));
+    }
+    async _get(key) {
+      const json = await storage.getItem(key);
+      return json ? JSON.parse(json) : null;
+    }
+    _remove(key) {
+      return storage.removeItem(key);
+    }
+    _addListener(_key, _listener) {
+      // AsyncStorage cross-tab event desteklemez, no-op
+    }
+    _removeListener(_key, _listener) {
+      // no-op
+    }
+  };
+
 // 🔹 Auth with AsyncStorage persistence
 let auth;
 try {
   auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage)
+    persistence: getReactNativePersistence(AsyncStorage),
   });
   console.log("✅ Firebase Auth with AsyncStorage initialized");
 } catch (error) {
-  // Auth zaten başlatılmışsa getAuth kullan
-  const { getAuth } = require("firebase/auth");
+  // Auth zaten başlatılmışsa (örn. Fast Refresh) getAuth kullan
   auth = getAuth(app);
   console.log("✅ Firebase Auth already initialized");
 }
@@ -86,6 +116,7 @@ export const FirestoreService = {
           const cardsQuery = query(
             cardsRef,
             where("categoryId", "==", category.id),
+            where("userId", "==", userId),
             orderBy("createdAt", "desc"),
             limit(1)
           );
@@ -120,6 +151,8 @@ export const FirestoreService = {
       const docRef = await addDoc(categoriesRef, {
         ...categoryData,
         userId,
+        ownerId: userId,
+        orgId: personalOrgId(userId),
         cardCount: 0,
         createdAt: new Date().toISOString(),
       });
@@ -149,10 +182,11 @@ export const FirestoreService = {
 
       console.log("🗑️ deleteCategory çağrıldı:", { categoryId, deleteCards, moveToFolderId });
 
-      // 1. Bu klasördeki tüm kartları bul
+      // 1. Bu klasördeki tüm kartları bul (kurallar userId eşleşmesi ister)
       const cardsQuery = query(
         cardsRef,
-        where("categoryId", "==", categoryId)
+        where("categoryId", "==", categoryId),
+        where("userId", "==", auth.currentUser?.uid)
       );
       const cardsSnapshot = await getDocs(cardsQuery);
       const cardCount = cardsSnapshot.docs.length;
@@ -222,6 +256,8 @@ export const FirestoreService = {
       if (snapshot.empty) {
         const docRef = await addDoc(categoriesRef, {
           userId,
+          ownerId: userId,
+          orgId: personalOrgId(userId),
           name: "Genel",
           icon: "📋",
           color: "#6B7280",
@@ -347,6 +383,10 @@ export const FirestoreService = {
 
       const docRef = await addDoc(cardsRef, {
         ...cardData,
+        // 🏢 Çok-kiracılı temel: her kart bir org'a + bir sahibe ait.
+        // userId korunur (geriye dönük okuma + güvenlik kuralları hâlâ userId'ye bakıyor).
+        ownerId: cardData.ownerId || cardData.userId,
+        orgId: cardData.orgId || personalOrgId(cardData.userId),
         isFavorite: false,
         createdAt: cardData.createdAt || new Date().toISOString(),
       });
@@ -414,6 +454,94 @@ export const FirestoreService = {
     } catch (error) {
       console.error("❌ Firestore setUserProfile error:", error);
       throw error;
+    }
+  },
+
+  // 🏢 Tek seferlik backfill: mevcut kart/klasörlere orgId + ownerId damgala.
+  // Idempotent + cihaz başına AsyncStorage bayrağıyla korunur. userId ile sorgular
+  // (mevcut okumalar hâlâ çalışıyor), eksik alanları batch ile doldurur.
+  backfillOrgFields: async (userId) => {
+    try {
+      if (!userId) return { patched: 0 };
+      const flagKey = `@org_backfill_done_${userId}`;
+      const done = await AsyncStorage.getItem(flagKey);
+      if (done) return { patched: 0, skipped: true };
+
+      const oid = personalOrgId(userId);
+      const refs = [cardsRef, categoriesRef];
+      let patched = 0;
+      let failed = 0;
+
+      // Doküman bazlı (batch değil): tek bozuk kayıt tümünü bloklamasın.
+      for (const ref of refs) {
+        const snap = await getDocs(query(ref, where("userId", "==", userId)));
+        for (const d of snap.docs) {
+          const data = d.data();
+          if (!data.orgId || !data.ownerId) {
+            try {
+              await updateDoc(d.ref, {
+                orgId: data.orgId || oid,
+                ownerId: data.ownerId || userId,
+              });
+              patched += 1;
+            } catch (e) {
+              failed += 1; // bu doküman sonraki turda tekrar denenecek
+            }
+          }
+        }
+      }
+
+      // Yalnızca her şey başarılıysa bayrağı set et (aksi halde tekrar dene)
+      if (failed === 0) await AsyncStorage.setItem(flagKey, "1");
+      console.log(`✅ Org backfill: ${patched} damgalandı, ${failed} başarısız`);
+      return { patched, failed };
+    } catch (error) {
+      // Bayrağı set ETME → sonraki açılışta tekrar dener
+      console.warn("⚠️ backfillOrgFields:", error?.message);
+      return { patched: 0, error: error?.message };
+    }
+  },
+
+  // 🏢 users/{uid} dokümanını oluştur/güncelle (çok-kiracılı kimlik temeli).
+  // Idempotent: girişte/kayıtta güvenle çağrılır. Var olan createdAt korunur.
+  // Firestore 'users' kuralı email + displayName ister; ikisini de garanti ederiz.
+  ensureUserProfile: async (user, extra = {}) => {
+    try {
+      if (!user?.uid) return null;
+      const uid = user.uid;
+      const email = user.email || extra.email || "";
+      if (!email) return null; // geçerli email yoksa users kuralı reddeder
+
+      let displayName = (
+        extra.displayName ||
+        user.displayName ||
+        (email.includes("@") ? email.split("@")[0] : "") ||
+        "Kullanıcı"
+      )
+        .toString()
+        .trim();
+      if (!displayName) displayName = "Kullanıcı";
+      if (displayName.length > 100) displayName = displayName.slice(0, 100);
+
+      const userRef = doc(usersRef, uid);
+      const snap = await getDoc(userRef);
+
+      const data = {
+        email,
+        displayName,
+        accountType: "personal",
+        activeOrgId: personalOrgId(uid),
+        updatedAt: new Date().toISOString(),
+      };
+      if (extra.company !== undefined) data.company = extra.company;
+      if (extra.jobTitle !== undefined) data.jobTitle = extra.jobTitle;
+      if (!snap.exists()) data.createdAt = new Date().toISOString();
+
+      await setDoc(userRef, data, { merge: true });
+      return { id: uid, ...data };
+    } catch (error) {
+      console.warn("⚠️ ensureUserProfile:", error?.message);
+      return null;
     }
   },
 

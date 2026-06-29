@@ -1,54 +1,40 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../utils/theme";
+import { useTranslation } from "../i18n/I18nProvider";
+import { ScreenContainer, AppText, EmptyState, Button } from "../components/ui";
 
 export default function QAPreviewScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation();
+  const { spacing } = useTheme();
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>QA Preview Screen</Text>
-      <Text style={styles.subtitle}>
-        Bu ekran test için oluşturuldu. OCR/Document AI sonuç önizlemesi burada olacak.
-      </Text>
+    <ScreenContainer padded>
+      <View style={{ marginTop: spacing.lg }}>
+        <AppText variant="title">{t("misc.qaPreviewTitle")}</AppText>
+      </View>
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate("QADetail")}
-      >
-        <Text style={styles.buttonText}>Detaylara Git</Text>
-      </TouchableOpacity>
+      <EmptyState
+        icon="eye-outline"
+        title={t("misc.qaPreviewSoon")}
+        description={t("misc.qaPreviewSoonDesc")}
+      />
 
-      <TouchableOpacity
-        style={[styles.button, { backgroundColor: "#444" }]}
-        onPress={() => navigation.navigate("Home")}
-      >
-        <Text style={styles.buttonText}>Ana Sayfaya Dön</Text>
-      </TouchableOpacity>
-    </View>
+      <View style={{ gap: spacing.md, marginTop: spacing.md }}>
+        <Button
+          title={t("misc.goToDetails")}
+          icon="arrow-forward"
+          onPress={() => navigation.navigate("QADetail")}
+        />
+        <Button
+          title={t("misc.backToHome")}
+          icon="home-outline"
+          variant="secondary"
+          onPress={() => navigation.navigate("Home")}
+        />
+      </View>
+    </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-  },
-  title: { color: "#fff", fontSize: 22, fontWeight: "600" },
-  subtitle: {
-    color: "#bbb",
-    marginVertical: 10,
-    textAlign: "center",
-  },
-  button: {
-    marginTop: 20,
-    backgroundColor: "#7B61FF",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-  },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "500" },
-});

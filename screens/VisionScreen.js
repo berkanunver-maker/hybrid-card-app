@@ -1,25 +1,34 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  ScrollView,
-} from "react-native";
+// screens/VisionScreen.js
+import React, { useState, useMemo } from "react";
+import { View, Pressable, Image, ScrollView, StyleSheet } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useTheme } from "../utils/theme";
-import { analyzeImage } from "../services/visionService";
-import { Loader, FeedbackModal, CustomButton } from "../components";
+import { useTranslation } from "../i18n/I18nProvider";
+import { VisionService } from "../services/visionService";
+import { FeedbackModal } from "../components";
+import {
+  ScreenContainer,
+  AppText,
+  Button,
+  Loader,
+  SectionHeader,
+  Icon,
+} from "../components/ui";
 
 export default function VisionScreen() {
-  const { colors } = useTheme();
+  const { colors, spacing, radius } = useTheme();
+  const { t } = useTranslation();
+  const styles = useMemo(
+    () => createStyles(colors, spacing, radius),
+    [colors, spacing, radius]
+  );
+
   const [imageUri, setImageUri] = useState(null);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
 
-  // 📸 Görsel seçimi
+  // Görsel seçimi
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -30,21 +39,20 @@ export default function VisionScreen() {
     }
   };
 
-  // 🧠 Görsel analizi
+  // Görsel analizi
   const handleAnalyze = async () => {
     if (!imageUri) {
-      alert("Lütfen bir görsel seçin.");
+      alert(t("tools.visionSelectImageAlert"));
       return;
     }
 
     try {
       setLoading(true);
-      const response = await analyzeImage(imageUri);
-      setAnalysisResult(response || "Sonuç alınamadı.");
+      const response = await VisionService.extractText(imageUri);
+      setAnalysisResult(response || t("tools.noResult"));
       setModalVisible(true);
     } catch (error) {
-      console.error("❌ Vision analyze error:", error);
-      setAnalysisResult("Görsel analizinde hata oluştu.");
+      setAnalysisResult(t("tools.visionError"));
       setModalVisible(true);
     } finally {
       setLoading(false);
@@ -52,79 +60,106 @@ export default function VisionScreen() {
   };
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ paddingBottom: 40 }}
-    >
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.text }]}>
-          Vision OCR Analizi
-        </Text>
-        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-          Görsellerden metin tanıma (OCR) işlemi yapabilirsiniz.
-        </Text>
+    <ScreenContainer>
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.lg, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <AppText variant="title">{t("tools.visionTitle")}</AppText>
+        <AppText
+          variant="body"
+          color="textSecondary"
+          style={{ marginTop: spacing.xs, marginBottom: spacing.xl }}
+        >
+          {t("tools.visionSubtitle")}
+        </AppText>
+
+        <SectionHeader title={t("tools.imageSection")} />
 
         {/* Görsel Önizleme */}
-        <TouchableOpacity
-          style={[
-            styles.imageBox,
-            { borderColor: colors.border, backgroundColor: colors.surface },
-          ]}
+        <Pressable
+          style={({ pressed }) => [styles.imageBox, pressed && { opacity: 0.92 }]}
           onPress={handlePickImage}
+          accessibilityRole="button"
+          accessibilityLabel={imageUri ? "Görseli değiştir" : "Görsel seç"}
         >
           {imageUri ? (
             <Image source={{ uri: imageUri }} style={styles.imagePreview} />
           ) : (
-            <Text style={{ color: colors.text }}>📷 Görsel Seç</Text>
+            <View style={styles.placeholder}>
+              <View style={styles.placeholderIcon}>
+                <Icon name="image-outline" size={28} color={colors.primary} />
+              </View>
+              <AppText variant="bodyStrong" style={{ marginTop: spacing.md }}>
+                {t("tools.selectImage")}
+              </AppText>
+              <AppText variant="caption" color="textMuted" style={{ marginTop: 2 }}>
+                {t("tools.selectImageHint")}
+              </AppText>
+            </View>
           )}
-        </TouchableOpacity>
+        </Pressable>
 
-        <CustomButton
-          title="Analiz Et"
+        <Button
+          title={t("tools.analyze")}
+          icon="scan-outline"
           onPress={handleAnalyze}
           disabled={!imageUri}
-          style={{ marginTop: 20 }}
+          loading={loading}
+          style={{ marginTop: spacing.xl }}
         />
-      </View>
+      </ScrollView>
 
       {/* Loader */}
-      <Loader visible={loading} text="OCR işlemi yapılıyor..." />
+      <Loader visible={loading} text={t("tools.visionLoading")} />
 
       {/* Feedback Modal */}
       <FeedbackModal
         visible={modalVisible}
-        title="OCR Sonucu"
+        title={t("tools.ocrResult")}
         message={
           typeof analysisResult === "string"
             ? analysisResult
             : JSON.stringify(analysisResult, null, 2)
         }
         primaryAction={{
-          text: "Kapat",
+          text: t("tools.close"),
           onPress: () => setModalVisible(false),
         }}
         onClose={() => setModalVisible(false)}
       />
-    </ScrollView>
+    </ScreenContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 20 },
-  title: { fontSize: 20, fontWeight: "700", marginBottom: 8 },
-  subtitle: { fontSize: 14, marginBottom: 20, lineHeight: 20 },
-  imageBox: {
-    borderWidth: 1.4,
-    borderRadius: 12,
-    height: 200,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  imagePreview: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
-});
+const createStyles = (colors, spacing, radius) =>
+  StyleSheet.create({
+    imageBox: {
+      borderWidth: 1.4,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      height: 220,
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+    },
+    placeholder: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: spacing.lg,
+    },
+    placeholderIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: radius.pill,
+      backgroundColor: colors.primaryMuted,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    imagePreview: {
+      width: "100%",
+      height: "100%",
+      resizeMode: "cover",
+    },
+  });

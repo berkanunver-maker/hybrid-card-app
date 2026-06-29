@@ -1,22 +1,31 @@
 // screens/FavoritesScreen.js
-import React, { useState, useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-  RefreshControl,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { View, StyleSheet, FlatList, Pressable, RefreshControl } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
-import { colors } from "../utils/colors";
+import { useTheme } from "../utils/theme";
+import { useTranslation } from "../i18n/I18nProvider";
 import { FirestoreService } from "../services/firestoreService";
 import { getAuth } from "firebase/auth";
+import {
+  ScreenContainer,
+  AppText,
+  SurfaceCard,
+  Badge,
+  EmptyState,
+  Loader,
+  Monogram,
+  Icon,
+} from "../components/ui";
 
 export default function FavoritesScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation();
+  const { colors, spacing, radius } = useTheme();
+  const styles = useMemo(
+    () => createStyles(colors, spacing, radius),
+    [colors, spacing, radius]
+  );
+
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -31,7 +40,7 @@ export default function FavoritesScreen() {
       const fetchedFavorites = await FirestoreService.getFavoriteCards(userId);
       setFavorites(fetchedFavorites);
     } catch (error) {
-      console.error("❌ Favoriler yüklenemedi:", error);
+      // sessiz geç
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -66,57 +75,73 @@ export default function FavoritesScreen() {
   };
 
   // Kart render
-  const renderCard = ({ item }) => (
-    <TouchableOpacity style={styles.card} onPress={() => handleCardPress(item)}>
-      <View style={styles.cardLeft}>
-        <Ionicons name="star" size={24} color="#FFD700" />
+  const renderCard = ({ item }) => {
+    const name = item.fields?.name || item.name || t("lists.unnamed");
+    const companyRaw = item.fields?.company || item.company || "";
+    const company = companyRaw || t("lists.noCompany");
+    const categoryName = item.categoryName || t("lists.general");
+    return (
+      <SurfaceCard
+        onPress={() => handleCardPress(item)}
+        accessibilityLabel={`${name}, ${company}, ${categoryName}`}
+        style={styles.card}
+      >
+        <Monogram name={name} company={companyRaw} />
         <View style={styles.cardInfo}>
-          <Text style={styles.cardName} numberOfLines={1}>
-            {item.fields?.name || item.name || "İsimsiz"}
-          </Text>
-          <Text style={styles.cardCompany} numberOfLines={1}>
-            {item.fields?.company || item.company || "Şirket bilgisi yok"}
-          </Text>
-          <Text style={styles.cardCategory} numberOfLines={1}>
-            📁 {item.categoryName || "Genel"}
-          </Text>
+          <AppText variant="bodyStrong" numberOfLines={1}>
+            {name}
+          </AppText>
+          <AppText
+            variant="caption"
+            color="textSecondary"
+            numberOfLines={1}
+            style={{ marginTop: 2 }}
+          >
+            {company}
+          </AppText>
+          <Badge tone="primary" label={categoryName} style={{ marginTop: 6 }} />
         </View>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color={colors.secondaryText} />
-    </TouchableOpacity>
-  );
+        <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+      </SurfaceCard>
+    );
+  };
 
   return (
-    <View style={styles.container}>
+    <ScreenContainer>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>⭐ Favoriler</Text>
-        <View style={{ width: 24 }} />
+        <Pressable
+          onPress={() => navigation.goBack()}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Geri"
+          style={styles.iconBtn}
+        >
+          <Icon name="arrow-back" size={24} color={colors.text} />
+        </Pressable>
+        <View style={styles.headerCenter}>
+          <Icon name="star" size={20} color={colors.star} style={{ marginRight: 8 }} />
+          <AppText variant="title">{t("lists.favoritesTitle")}</AppText>
+        </View>
+        <View style={styles.iconBtn} />
       </View>
 
       {/* Favori Listesi */}
       {loading && !refreshing ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Favoriler yükleniyor...</Text>
-        </View>
+        <Loader visible text={t("lists.loadingFavorites")} />
       ) : favorites.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>⭐</Text>
-          <Text style={styles.emptyText}>Henüz favori kartınız yok</Text>
-          <Text style={styles.emptySubtext}>
-            Kart detayında yıldız simgesine basarak favori ekleyin
-          </Text>
-        </View>
+        <EmptyState
+          icon="star-outline"
+          title={t("lists.favoritesEmptyTitle")}
+          description={t("lists.favoritesEmptyDescription")}
+        />
       ) : (
         <FlatList
           data={favorites}
           keyExtractor={(item) => item.id}
           renderItem={renderCard}
           contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -125,106 +150,62 @@ export default function FavoritesScreen() {
             />
           }
           ListHeaderComponent={
-            <Text style={styles.countText}>
-              {favorites.length} favori kart
-            </Text>
+            <AppText
+              variant="caption"
+              color="textSecondary"
+              style={{ marginBottom: spacing.md }}
+            >
+              {t("lists.favoriteCardCount", { count: favorites.length })}
+            </AppText>
           }
         />
       )}
-    </View>
+    </ScreenContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-    backgroundColor: colors.background,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: colors.text,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    color: colors.secondaryText,
-    marginTop: 12,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 40,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: colors.text,
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: colors.secondaryText,
-    textAlign: "center",
-  },
-  listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  countText: {
-    fontSize: 14,
-    color: colors.secondaryText,
-    marginBottom: 12,
-  },
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: colors.cardBackground || "#1C1C1E",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  cardLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    gap: 12,
-  },
-  cardInfo: {
-    flex: 1,
-  },
-  cardName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.text,
-    marginBottom: 4,
-  },
-  cardCompany: {
-    fontSize: 14,
-    color: colors.secondaryText,
-    marginBottom: 4,
-  },
-  cardCategory: {
-    fontSize: 12,
-    color: colors.primary,
-  },
-});
+const createStyles = (colors, spacing, radius) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    iconBtn: {
+      width: 44,
+      height: 44,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    headerCenter: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+      justifyContent: "center",
+    },
+    card: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      marginBottom: spacing.md,
+    },
+    cardInfo: {
+      flex: 1,
+      minWidth: 0,
+    },
+    starAvatar: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.pill,
+      backgroundColor: colors.warningSurface,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    listContent: {
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.xl,
+    },
+  });

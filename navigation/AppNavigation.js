@@ -1,26 +1,33 @@
-import React, { useState } from "react";
-import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
+import React from "react";
+import {
+  NavigationContainer,
+  DefaultTheme,
+  DarkTheme,
+} from "@react-navigation/native";
+import { StatusBar } from "expo-status-bar";
 import StackNavigator from "./StackNavigator";
-import { colors } from "../utils/colors";
+import { useTheme } from "../utils/theme";
 
 export default function AppNavigation() {
-  const [loading, setLoading] = useState(false);
-  const [feedbackVisible, setFeedbackVisible] = useState(false);
+  const { colors, isDark } = useTheme();
 
-  const appTheme = {
-    ...DefaultTheme,
+  const base = isDark ? DarkTheme : DefaultTheme;
+  const navTheme = {
+    ...base,
     colors: {
-      ...DefaultTheme.colors,
-      background: colors.background,
+      ...base.colors,
+      background: colors.bg,
+      card: colors.surface,
       primary: colors.primary,
       text: colors.text,
       border: colors.border,
+      notification: colors.danger,
     },
   };
 
   return (
-    <NavigationContainer theme={appTheme}>
-      {/* Ana Stack Navigatör */}
+    <NavigationContainer theme={navTheme}>
+      <StatusBar style={isDark ? "light" : "dark"} />
       <StackNavigator />
     </NavigationContainer>
   );

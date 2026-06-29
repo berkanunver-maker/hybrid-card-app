@@ -1,45 +1,51 @@
 // components/DeleteConfirmDialog.js
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../utils/colors";
+import React, { useState, useMemo } from "react";
+import { View, Pressable, StyleSheet } from "react-native";
+import Icon from "./ui/Icon";
+import { useTheme } from "../utils/theme";
+import { useTranslation } from "../i18n/I18nProvider";
+import { Dialog, AppText, Button } from "./ui";
 
 export default function DeleteConfirmDialog({
   visible,
   onClose,
   onConfirm,
-  title = "Silme Onayı",
-  message = "Bu işlemi geri alamazsınız.",
+  title,
+  message,
   itemName = "",
   itemCount = 0,
   showMoveOption = false,
-  confirmText = "Sil",
-  cancelText = "İptal",
+  confirmText,
+  cancelText,
 }) {
+  const { colors, spacing, radius } = useTheme();
+  const { t } = useTranslation();
+  const styles = useMemo(
+    () => createStyles(colors, spacing, radius),
+    [colors, spacing, radius]
+  );
+
+  const resolvedTitle = title ?? t("modals.deleteConfirmTitle");
+  const resolvedMessage = message ?? t("modals.deleteConfirmMessage");
+  const resolvedConfirmText = confirmText ?? t("common.delete");
+  const resolvedCancelText = cancelText ?? t("common.cancel");
+
   const [loading, setLoading] = useState(false);
   const [selectedOption, setSelectedOption] = useState("delete");
 
   const handleConfirm = async () => {
     try {
       setLoading(true);
-      
+
       if (showMoveOption) {
         await onConfirm(selectedOption === "move");
       } else {
         await onConfirm();
       }
-      
+
       setLoading(false);
       onClose();
     } catch (error) {
-      console.error("❌ DeleteConfirmDialog error:", error);
       setLoading(false);
     }
   };
@@ -51,275 +57,207 @@ export default function DeleteConfirmDialog({
     }
   };
 
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleClose}
-    >
-      <View style={styles.overlay}>
-        <View style={styles.dialogContainer}>
-          <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="warning" size={32} color="#EF4444" />
-            </View>
-            <Text style={styles.title}>{title}</Text>
-          </View>
-
-          <View style={styles.content}>
-            {itemName && (
-              <Text style={styles.itemName}>"{itemName}"</Text>
-            )}
-            <Text style={styles.message}>{message}</Text>
-            
-            {itemCount > 0 && (
-              <View style={styles.infoBox}>
-                <Ionicons name="information-circle" size={20} color={colors.primary} />
-                <Text style={styles.infoText}>
-                  Bu klasörde <Text style={styles.infoTextBold}>{itemCount} kart</Text> bulunuyor.
-                </Text>
-              </View>
-            )}
-
-            {showMoveOption && itemCount > 0 && (
-              <View style={styles.optionsContainer}>
-                <Text style={styles.optionsLabel}>Kartlar ne olsun?</Text>
-                
-                <TouchableOpacity
-                  style={[
-                    styles.optionButton,
-                    selectedOption === "move" && styles.optionButtonSelected,
-                  ]}
-                  onPress={() => setSelectedOption("move")}
-                  disabled={loading}
-                >
-                  <View style={styles.radioButton}>
-                    {selectedOption === "move" && (
-                      <View style={styles.radioButtonInner} />
-                    )}
-                  </View>
-                  <View style={styles.optionContent}>
-                    <Text style={styles.optionTitle}>
-                      Kartları "Genel" klasörüne taşı
-                    </Text>
-                    <Text style={styles.optionDescription}>
-                      Kartlar korunur, sadece klasör silinir
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.optionButton,
-                    selectedOption === "delete" && styles.optionButtonSelected,
-                  ]}
-                  onPress={() => setSelectedOption("delete")}
-                  disabled={loading}
-                >
-                  <View style={styles.radioButton}>
-                    {selectedOption === "delete" && (
-                      <View style={styles.radioButtonInner} />
-                    )}
-                  </View>
-                  <View style={styles.optionContent}>
-                    <Text style={[styles.optionTitle, styles.dangerText]}>
-                      Kartlarla birlikte sil
-                    </Text>
-                    <Text style={styles.optionDescription}>
-                      Tüm kartlar kalıcı olarak silinir
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
-              onPress={handleClose}
-              disabled={loading}
-            >
-              <Text style={styles.cancelButtonText}>{cancelText}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.deleteButton]}
-              onPress={handleConfirm}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="trash" size={18} color="#fff" />
-                  <Text style={styles.deleteButtonText}>{confirmText}</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+  const renderOption = (value, optionTitle, description, danger) => {
+    const selected = selectedOption === value;
+    return (
+      <Pressable
+        style={[styles.optionButton, selected && styles.optionButtonSelected]}
+        onPress={() => setSelectedOption(value)}
+        disabled={loading}
+        accessibilityRole="radio"
+        accessibilityState={{ checked: selected, disabled: loading }}
+        accessibilityLabel={optionTitle}
+      >
+        <View style={[styles.radioButton, selected && styles.radioButtonActive]}>
+          {selected && <View style={styles.radioButtonInner} />}
         </View>
+        <View style={styles.optionContent}>
+          <AppText
+            variant="bodyStrong"
+            color={danger ? "danger" : "text"}
+            style={{ marginBottom: 4 }}
+          >
+            {optionTitle}
+          </AppText>
+          <AppText variant="caption" color="textSecondary">
+            {description}
+          </AppText>
+        </View>
+      </Pressable>
+    );
+  };
+
+  return (
+    <Dialog visible={visible} onClose={handleClose} dismissable={!loading}>
+      <View style={styles.header}>
+        <View style={styles.iconContainer}>
+          <Icon name="warning" size={32} color={colors.danger} />
+        </View>
+        <AppText variant="title" style={styles.title}>
+          {resolvedTitle}
+        </AppText>
       </View>
-    </Modal>
+
+      <View style={styles.content}>
+        {itemName ? (
+          <AppText variant="bodyStrong" style={styles.itemName}>
+            "{itemName}"
+          </AppText>
+        ) : null}
+        <AppText variant="body" color="textSecondary" style={styles.message}>
+          {resolvedMessage}
+        </AppText>
+
+        {itemCount > 0 && (
+          <View style={styles.infoBox}>
+            <Icon
+              name="information-circle"
+              size={20}
+              color={colors.primary}
+            />
+            <AppText variant="caption" color="text" style={styles.infoText}>
+              {t("modals.folderCardCountInfoPre")}{" "}
+              <AppText variant="caption" style={styles.infoTextBold}>
+                {t("modals.cardCount", { count: itemCount })}
+              </AppText>{" "}
+              {t("modals.folderCardCountInfoPost")}
+            </AppText>
+          </View>
+        )}
+
+        {showMoveOption && itemCount > 0 && (
+          <View style={styles.optionsContainer}>
+            <AppText variant="bodyStrong" style={{ marginBottom: spacing.md }}>
+              {t("modals.whatAboutCards")}
+            </AppText>
+
+            {renderOption(
+              "move",
+              t("modals.moveCardsToGeneral"),
+              t("modals.moveCardsDescription"),
+              false
+            )}
+            {renderOption(
+              "delete",
+              t("modals.deleteWithCards"),
+              t("modals.deleteWithCardsDescription"),
+              true
+            )}
+          </View>
+        )}
+      </View>
+
+      <View style={styles.buttonContainer}>
+        <Button
+          title={resolvedCancelText}
+          variant="secondary"
+          onPress={handleClose}
+          disabled={loading}
+          style={styles.flexBtn}
+        />
+        <Button
+          title={resolvedConfirmText}
+          variant="danger"
+          icon="trash"
+          loading={loading}
+          onPress={handleConfirm}
+          style={styles.flexBtn}
+        />
+      </View>
+    </Dialog>
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.75)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  dialogContainer: {
-    backgroundColor: colors.background,
-    borderRadius: 20,
-    width: "100%",
-    maxWidth: 400,
-    overflow: "hidden",
-  },
-  header: {
-    alignItems: "center",
-    paddingTop: 32,
-    paddingHorizontal: 24,
-  },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "#FEE2E2",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: colors.text,
-    textAlign: "center",
-  },
-  content: {
-    padding: 24,
-  },
-  itemName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.text,
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  message: {
-    fontSize: 14,
-    color: colors.secondaryText,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  infoBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.primary + "15",
-    padding: 12,
-    borderRadius: 12,
-    marginTop: 16,
-    gap: 8,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 13,
-    color: colors.text,
-    lineHeight: 18,
-  },
-  infoTextBold: {
-    fontWeight: "700",
-  },
-  optionsContainer: {
-    marginTop: 24,
-  },
-  optionsLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.text,
-    marginBottom: 12,
-  },
-  optionButton: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    backgroundColor: colors.cardBackground || "#1C1C1E",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  optionButtonSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary + "15",
-  },
-  radioButton: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: colors.border || "#2C2C2E",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 2,
-    marginRight: 12,
-  },
-  radioButtonInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.primary,
-  },
-  optionContent: {
-    flex: 1,
-  },
-  optionTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.text,
-    marginBottom: 4,
-  },
-  optionDescription: {
-    fontSize: 12,
-    color: colors.secondaryText,
-    lineHeight: 16,
-  },
-  dangerText: {
-    color: "#EF4444",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    padding: 16,
-    gap: 12,
-    backgroundColor: colors.cardBackground || "#1C1C1E",
-  },
-  button: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-    borderRadius: 12,
-    gap: 8,
-  },
-  cancelButton: {
-    backgroundColor: colors.border || "#2C2C2E",
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.text,
-  },
-  deleteButton: {
-    backgroundColor: "#EF4444",
-  },
-  deleteButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#fff",
-  },
-});
+const createStyles = (colors, spacing, radius) =>
+  StyleSheet.create({
+    header: {
+      alignItems: "center",
+      marginBottom: spacing.lg,
+    },
+    iconContainer: {
+      width: 64,
+      height: 64,
+      borderRadius: radius.pill,
+      backgroundColor: colors.dangerSurface,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: spacing.lg,
+    },
+    title: {
+      textAlign: "center",
+    },
+    content: {
+      marginBottom: spacing.lg,
+    },
+    itemName: {
+      textAlign: "center",
+      marginBottom: spacing.sm,
+    },
+    message: {
+      textAlign: "center",
+    },
+    infoBox: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.primaryMuted,
+      padding: spacing.md,
+      borderRadius: radius.md,
+      marginTop: spacing.lg,
+      gap: spacing.sm,
+    },
+    infoText: {
+      flex: 1,
+      lineHeight: 18,
+    },
+    infoTextBold: {
+      fontWeight: "700",
+      color: colors.text,
+    },
+    optionsContainer: {
+      marginTop: spacing.xxl,
+    },
+    optionButton: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      backgroundColor: colors.surface,
+      padding: spacing.lg,
+      borderRadius: radius.md,
+      marginBottom: spacing.sm,
+      borderWidth: 2,
+      borderColor: colors.border,
+    },
+    optionButtonSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primaryMuted,
+    },
+    radioButton: {
+      width: 20,
+      height: 20,
+      borderRadius: radius.pill,
+      borderWidth: 2,
+      borderColor: colors.borderStrong,
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: 2,
+      marginRight: spacing.md,
+    },
+    radioButtonActive: {
+      borderColor: colors.primary,
+    },
+    radioButtonInner: {
+      width: 10,
+      height: 10,
+      borderRadius: radius.pill,
+      backgroundColor: colors.primary,
+    },
+    optionContent: {
+      flex: 1,
+    },
+    buttonContainer: {
+      flexDirection: "row",
+      gap: spacing.md,
+    },
+    flexBtn: {
+      flex: 1,
+    },
+  });

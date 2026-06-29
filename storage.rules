@@ -40,8 +40,8 @@ service firebase.storage {
       allow delete: if isOwner(userId);
     }
 
-    // Voice notes - stored in voice-notes/{userId}/{noteId}
-    match /voice-notes/{userId}/{noteId} {
+    // Voice notes - stored in voices/{userId}/{noteId}
+    match /voices/{userId}/{noteId} {
       // Only the owner can read, write, and delete their voice notes
       allow read: if isOwner(userId);
       allow write: if isOwner(userId) &&

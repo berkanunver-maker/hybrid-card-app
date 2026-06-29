@@ -1,27 +1,36 @@
 // screens/ForgotPasswordScreen.js
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   Alert,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native";
 import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../utils/theme";
+import { mapAuthError } from "../utils/format";
+import { useTranslation } from "../i18n/I18nProvider";
+import {
+  ScreenContainer,
+  AppText,
+  Input,
+  Button,
+} from "../components/ui";
 
 export default function ForgotPasswordScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation();
+  const { spacing } = useTheme();
+  const styles = useMemo(() => createStyles(spacing), [spacing]);
+
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleResetPassword = async () => {
     if (!email.trim()) {
-      Alert.alert("Uyarı", "Lütfen e-posta adresinizi girin.");
+      Alert.alert(t("auth.warning"), t("auth.emailRequired"));
       return;
     }
 
@@ -30,119 +39,79 @@ export default function ForgotPasswordScreen() {
       const auth = getAuth();
       await sendPasswordResetEmail(auth, email.trim());
       Alert.alert(
-        "E-posta gönderildi",
-        "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.",
-        [{ text: "Tamam", onPress: () => navigation.goBack() }]
+        t("auth.emailSentTitle"),
+        t("auth.emailSentMessage"),
+        [{ text: t("common.ok"), onPress: () => navigation.goBack() }]
       );
     } catch (error) {
-      console.error("❌ Şifre sıfırlama hatası:", error);
-      if (error.code === "auth/user-not-found") {
-        Alert.alert("Hata", "Bu e-posta ile kayıtlı kullanıcı bulunamadı.");
-      } else if (error.code === "auth/invalid-email") {
-        Alert.alert("Hata", "Geçersiz e-posta adresi.");
-      } else {
-        Alert.alert("Hata", "İşlem başarısız. Lütfen tekrar deneyin.");
-      }
+      Alert.alert(t("common.error"), mapAuthError(error));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View style={styles.content}>
-        <Text style={styles.title}>Reset your password</Text>
-        <Text style={styles.subtitle}>
-          Please enter your registered e-mail address. We'll send you a password
-          reset link.
-        </Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="E-posta adresiniz"
-          placeholderTextColor="#666"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          editable={!loading}
-        />
-
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleResetPassword}
-          disabled={loading}
+    <ScreenContainer edges={["top", "bottom"]}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Send reset link</Text>
-          )}
-        </TouchableOpacity>
+          <AppText variant="title" style={styles.title}>
+            {t("auth.forgotTitle")}
+          </AppText>
+          <AppText variant="body" color="textSecondary" style={styles.subtitle}>
+            {t("auth.forgotSubtitle")}
+          </AppText>
 
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{ marginTop: 20 }}
-        >
-          <Text style={styles.backText}>← Back to Login</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          <Input
+            label={t("auth.emailLabel")}
+            placeholder={t("auth.forgotEmailPlaceholder")}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!loading}
+          />
+
+          <Button
+            title={t("auth.sendResetLink")}
+            onPress={handleResetPassword}
+            loading={loading}
+            disabled={loading}
+            style={styles.submit}
+          />
+
+          <Button
+            title={t("auth.backToLogin")}
+            icon="arrow-back"
+            variant="ghost"
+            onPress={() => navigation.goBack()}
+            disabled={loading}
+            style={styles.back}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ScreenContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 80,
-  },
-  title: {
-    color: "#fff",
-    fontSize: 26,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  subtitle: {
-    color: "#999",
-    fontSize: 14,
-    marginBottom: 30,
-  },
-  input: {
-    backgroundColor: "#1E1E1E",
-    borderRadius: 12,
-    padding: 16,
-    color: "#fff",
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#333",
-    marginBottom: 16,
-  },
-  button: {
-    backgroundColor: "#7B61FF",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    backgroundColor: "#555",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  backText: {
-    color: "#7B61FF",
-    textAlign: "center",
-    fontSize: 14,
-  },
-});
+const createStyles = (spacing) =>
+  StyleSheet.create({
+    flex: { flex: 1 },
+    content: {
+      flexGrow: 1,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.xl,
+      paddingBottom: spacing.xl,
+    },
+    title: { marginBottom: spacing.sm },
+    subtitle: { marginBottom: spacing.xl },
+    submit: { marginTop: spacing.sm },
+    back: { marginTop: spacing.md, alignSelf: "center" },
+  });

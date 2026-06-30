@@ -1,0 +1,14 @@
+{
+  "name": "functions",
+  "description": "Cloud Functions — org/üyelik, davet/koltuk, aktivite + push (Faz 2)",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "private": true,
+  "dependencies": {
+    "expo-server-sdk": "^3.10.0",
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^5.1.0"
+  }
+}

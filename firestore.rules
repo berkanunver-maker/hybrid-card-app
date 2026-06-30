@@ -141,9 +141,48 @@ service cloud.firestore {
         isValidString(request.resource.data.name, 1, 200);
     }
 
-    // ── Org koleksiyonları (organizations / memberships / invites / activity /
-    // devices): istemci YAZAMAZ. Faz 2'de Cloud Functions (Admin SDK) yazacak;
-    // üye okuma izinleri o zaman eklenecek. Şimdilik tamamen kapalı. ───────────
+    // ── Organizations + alt koleksiyonlar (activity, devices) ───────────────
+    match /organizations/{orgId} {
+      allow read: if isSignedIn() && isActiveMember(orgId);
+      // Org dokümanı yalnızca Cloud Functions (Admin SDK) tarafından yazılır
+      allow write: if false;
+
+      // Canlı aktivite akışı — üyeler okur; yalnızca CF yazar
+      match /activity/{eventId} {
+        allow read: if isSignedIn() && isActiveMember(orgId);
+        allow write: if false;
+      }
+
+      // Cihaz push token'ları — üye KENDİ token'ını yazar; rol BİLGİSİ TUTULAMAZ
+      // (yoksa üye kendini owner ilan edip patronun bildirimlerini alabilir).
+      // Hedefleme rolü CF'de memberships'ten okunur; istemci device okuyamaz.
+      match /devices/{deviceId} {
+        allow read: if false;
+        allow create, update: if isSignedIn()
+          && isActiveMember(orgId)
+          && request.resource.data.uid == request.auth.uid
+          && !request.resource.data.keys().hasAny(['role']);
+        allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+      }
+    }
+
+    // ── Memberships — CF yazar; kullanıcı kendi üyeliğini, admin org üyelerini okur
+    match /memberships/{membershipId} {
+      allow read: if isSignedIn() && (
+        resource.data.uid == request.auth.uid ||
+        isOrgAdmin(resource.data.orgId)
+      );
+      allow write: if false;
+    }
+
+    // ── Invites — CF yazar; org admini veya davet edilen e-posta okur
+    match /invites/{inviteId} {
+      allow read: if isSignedIn() && (
+        isOrgAdmin(resource.data.orgId) ||
+        resource.data.email == request.auth.token.email
+      );
+      allow write: if false;
+    }
 
     // Varsayılan: diğer her şeyi reddet
     match /{document=**} {

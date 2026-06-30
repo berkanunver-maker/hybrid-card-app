@@ -4,6 +4,7 @@ import home from "./locales/home";
 import carddetail from "./locales/carddetail";
 import camera from "./locales/camera";
 import addcontact from "./locales/addcontact";
+import activity from "./locales/activity";
 import auth from "./locales/auth";
 import lists from "./locales/lists";
 import search from "./locales/search";
@@ -47,6 +48,7 @@ const base = {
     "profile.syncPending": "{count} kart senkron bekliyor",
     "profile.syncNow": "Şimdi gönder",
     "profile.logoutError": "Çıkış yapılamadı. Lütfen tekrar deneyin.",
+    "profile.company": "Şirket",
   },
   en: {
     "common.save": "Save",
@@ -78,10 +80,11 @@ const base = {
     "profile.syncPending": "{count} cards waiting to sync",
     "profile.syncNow": "Sync now",
     "profile.logoutError": "Could not sign out. Please try again.",
+    "profile.company": "Company",
   },
 };
 
-const packs = [home, carddetail, camera, addcontact, auth, lists, search, modals, tools, misc, uinav];
+const packs = [home, carddetail, camera, addcontact, activity, auth, lists, search, modals, tools, misc, uinav];
 
 function build(lang) {
   return packs.reduce(

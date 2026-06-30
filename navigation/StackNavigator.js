@@ -24,6 +24,7 @@ import CardHolderScreen from "../screens/CardHolderScreen";
 import FolderScreen from "../screens/FolderScreen";
 import FavoritesScreen from "../screens/FavoritesScreen";
 import AllCardsScreen from "../screens/AllCardsScreen";
+import ActivityFeedScreen from "../screens/ActivityFeedScreen";
 import SearchScreen from "../screens/SearchScreen";
 
 // 🆕 Şifremi Unuttum Ekranı
@@ -144,6 +145,13 @@ export default function StackNavigator() {
       <Stack.Screen
         name="AllCards"
         component={AllCardsScreen}
+        options={{ headerShown: false }}
+      />
+
+      {/* 🏢 Ekip Aktivitesi (Faz 2) */}
+      <Stack.Screen
+        name="ActivityFeed"
+        component={ActivityFeedScreen}
         options={{ headerShown: false }}
       />
 

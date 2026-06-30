@@ -139,6 +139,18 @@ export default function ProfileScreen() {
           <AppText variant="body" color="textMuted">{version}</AppText>
         </View>
 
+        <SectionHeader title={t("profile.company")} style={{ marginTop: spacing.xxl }} />
+        <Pressable
+          style={styles.infoRow}
+          onPress={() => navigation.navigate("ActivityFeed")}
+          accessibilityRole="button"
+          accessibilityLabel={t("activity.title")}
+        >
+          <Icon name="notifications-outline" size={20} color={colors.textSecondary} />
+          <AppText variant="body" style={{ flex: 1, marginLeft: 12 }}>{t("activity.title")}</AppText>
+          <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+        </Pressable>
+
         <View style={{ marginTop: spacing.xxl }}>
           <Button title={t("profile.logout")} variant="danger" icon="log-out-outline" onPress={handleLogout} />
         </View>

@@ -53,7 +53,8 @@
         {
           "contactsPermission": "Kartları telefon rehberinize kaydetmek için kişiler erişimi gerekir."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

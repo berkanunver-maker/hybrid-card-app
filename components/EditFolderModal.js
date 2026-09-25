@@ -98,7 +98,7 @@ export default function EditFolderModal({
           disabled={loading}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Kapat"
+          accessibilityLabel={t("a11y.close")}
           style={styles.closeBtn}
         >
           <Icon name="close" size={24} color={colors.text} />

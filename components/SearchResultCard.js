@@ -43,7 +43,7 @@ export default function SearchResultCard({ card, onPress }) {
               size={16}
               color={colors.star}
               style={styles.favoriteIcon}
-              accessibilityLabel="Favori"
+              accessibilityLabel={t("a11y.favorite")}
             />
           )}
         </View>

@@ -244,7 +244,7 @@ export default function CameraScreen() {
           <Image
             source={{ uri: capturedPhoto }}
             style={styles.preview}
-            accessibilityLabel="Çekilen kartvizit fotoğrafı"
+            accessibilityLabel={t("a11y.capturedCardPhoto")}
           />
           {loading ? (
             <View style={styles.loaderBox} accessibilityLiveRegion="polite">

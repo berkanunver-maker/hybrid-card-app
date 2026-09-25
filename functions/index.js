@@ -44,6 +44,37 @@ async function requireAdmin(orgId, uid) {
   return d;
 }
 
+// ── Per-uid rate limit (App Check yok; kimlik doğrulamalı her kullanıcı callable'ları
+// döngüye sokup Firestore/Auth maliyeti şişirebilir — bulgu #14). rateLimits koleksiyonu
+// yalnızca Admin SDK'dan yazılır; istemci default-deny ile erişemez.
+const RATE_LIMITS = {
+  createOrganization: { max: 5, windowMs: 60 * 60 * 1000 }, // saatte 5 org
+  createInvite: { max: 30, windowMs: 60 * 60 * 1000 }, // saatte 30 davet
+};
+
+async function enforceRateLimit(uid, action) {
+  const cfg = RATE_LIMITS[action];
+  if (!cfg) return;
+  const ref = db.collection("rateLimits").doc(`${uid}_${action}`);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const now = Date.now();
+    const d = snap.exists ? snap.data() : null;
+    const started = d?.windowStart ? d.windowStart.toMillis() : 0;
+    if (d && now - started < cfg.windowMs) {
+      if ((d.count || 0) >= cfg.max) {
+        throw new HttpsError(
+          "resource-exhausted",
+          "Çok fazla istek. Lütfen bir süre sonra tekrar deneyin."
+        );
+      }
+      tx.update(ref, { count: FieldValue.increment(1) });
+    } else {
+      tx.set(ref, { count: 1, windowStart: Timestamp.fromMillis(now), action, uid });
+    }
+  });
+}
+
 // ── createOrganization: kullanıcı bir şirket org'u oluşturur ve sahibi olur ───
 exports.createOrganization = onCall(async (req) => {
   const uid = req.auth?.uid;
@@ -53,6 +84,8 @@ exports.createOrganization = onCall(async (req) => {
     throw new HttpsError("invalid-argument", "Geçersiz şirket adı.");
   }
   const seats = Math.max(1, Math.min(parseInt(req.data?.seats, 10) || 1, 1000));
+  // Rate-limit doğrulamadan SONRA: geçersiz denemeler kotayı tüketmesin (kilitlenme #5).
+  await enforceRateLimit(uid, "createOrganization");
 
   const newId = db.collection("organizations").doc().id;
   const orgId = `org:${newId}`;
@@ -97,12 +130,29 @@ exports.createInvite = onCall(async (req) => {
 
   await requireAdmin(orgId, uid);
 
-  // Koltuk dolu mu? (bilgi amaçlı; kesin kontrol kabulde yapılır)
+  // Koltuk dolu mu? Bekleyen (süresi geçmemiş) davetler de koltuk rezerve etsin ki
+  // koltuktan fazla davet üretilmesin (bulgu #15). Kesin kontrol yine kabulde yapılır.
   const org = await orgRef(orgId).get();
   const o = org.data() || {};
-  if ((o.seatsUsed || 0) >= (o.seatsPurchased || 0)) {
-    throw new HttpsError("resource-exhausted", "Boş koltuk yok. Önce koltuk ekleyin.");
+  const pendingSnap = await db
+    .collection("invites")
+    .where("orgId", "==", orgId)
+    .where("status", "==", "pending")
+    .get();
+  const nowMs = Date.now();
+  const pendingActive = pendingSnap.docs.filter((d) => {
+    const e = d.data().expiresAt;
+    return e && e.toMillis() > nowMs;
+  }).length;
+  if ((o.seatsUsed || 0) + pendingActive >= (o.seatsPurchased || 0)) {
+    throw new HttpsError(
+      "resource-exhausted",
+      "Boş koltuk yok (bekleyen davetler dahil). Önce koltuk ekleyin."
+    );
   }
+
+  // Rate-limit koltuk kontrolünden SONRA: reddedilen denemeler davet kotasını yakmasın (#7).
+  await enforceRateLimit(uid, "createInvite");
 
   const token = crypto.randomBytes(24).toString("hex");
   const inviteRef = db.collection("invites").doc();
@@ -211,8 +261,12 @@ exports.onCardCreated = onDocumentCreated("cards/{cardId}", async (event) => {
       cardId: event.params.cardId,
       title: `${actorName || "Bir çalışan"} yeni müşteri ekledi`,
       preview: `${name}${company ? " · " + company : ""}${noteText ? " — " + noteText : ""}`,
+      // Tokenlı indirme URL'si (bearer) org-okunabilir aktiviteye YAZILMAZ — kalıcı
+      // sızıntı olur. Yalnızca Storage path'i tutulur; sesi çözmek için Storage okuma
+      // izni gerekir (kurallar). Yöneticilerin sesi duyması istenirse org-kapsamlı
+      // Storage kuralı + kısa ömürlü signed URL ile ayrıca eklenmelidir.
       voice: card.voice_note
-        ? { transcript: card.voice_note.text || "", audioUrl: card.voice_note.audioUrl || null }
+        ? { transcript: card.voice_note.text || "", audioPath: card.voice_note.audioPath || null }
         : null,
       createdAt: FieldValue.serverTimestamp(),
       deliveredPush: false,

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../utils/theme";
 import AppText from "./ui/Text";
 import Icon from "./ui/Icon";
+import { useTranslation } from "../i18n/I18nProvider";
 
 export default function Header({
   title = "",
@@ -14,6 +15,7 @@ export default function Header({
   style,
   textStyle,
 }) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -49,7 +51,7 @@ export default function Header({
           <Pressable
             onPress={handleBack}
             accessibilityRole="button"
-            accessibilityLabel="Geri"
+            accessibilityLabel={t("a11y.back")}
             hitSlop={8}
             style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
           >

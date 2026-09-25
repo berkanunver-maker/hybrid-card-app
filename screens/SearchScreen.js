@@ -87,6 +87,9 @@ export default function SearchScreen() {
 
   // Debounce timer için ref
   const searchTimeout = React.useRef(null);
+  // Aynı sorgu için geçmişi tekrar tekrar kaydetmeyi önler (filtre değiştikçe
+  // performSearch yeniden koşuyor; history yalnızca SORGU değişince yazılmalı — #46).
+  const lastRecordedQuery = React.useRef("");
 
   // Arama yap (debounce ile)
   const performSearch = useCallback(
@@ -117,8 +120,10 @@ export default function SearchScreen() {
           );
           setResults(searchResults);
 
-          // Arama geçmişine ekle
-          if (query.trim()) {
+          // Arama geçmişine YALNIZCA sorgu değiştiyse ekle (filtre değişiminde değil).
+          const trimmed = query.trim();
+          if (trimmed && trimmed !== lastRecordedQuery.current) {
+            lastRecordedQuery.current = trimmed;
             await SearchService.addToHistory(query);
             await loadSearchHistory();
           }
@@ -250,7 +255,7 @@ export default function SearchScreen() {
           style={styles.backButton}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Geri"
+          accessibilityLabel={t("a11y.back")}
         >
           <Icon name="arrow-back" size={24} color={colors.text} />
         </Pressable>
@@ -333,7 +338,7 @@ export default function SearchScreen() {
                 }}
                 hitSlop={8}
                 accessibilityRole="button"
-                accessibilityLabel="Arama geçmişini temizle"
+                accessibilityLabel={t("a11y.clearSearchHistory")}
               >
                 <AppText variant="caption" color="primary">
                   {t("search.clear")}
@@ -369,7 +374,9 @@ export default function SearchScreen() {
       ) : null}
 
       {/* Loading */}
-      <Loader visible={loading} text={t("search.searching")} />
+      {/* Tam-ekran overlay yalnızca İLK aramada (sonuç yokken); artışlı aramada
+          mevcut sonuçlar bloklanıp strobe yapmasın (#53). */}
+      <Loader visible={loading && results.length === 0} text={t("search.searching")} />
 
       {/* Results */}
       <FlatList

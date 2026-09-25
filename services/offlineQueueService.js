@@ -119,7 +119,8 @@ async function processItem(item) {
     const transcript = await voiceService.transcribeAudio(item.localAudio);
     voice_note = {
       text: transcript?.text || transcript?.voice_note?.text || "Ses kaydı",
-      audioUrl: audioUpload.url,
+      // Tokenlı URL yerine Storage path'i saklanır; okuma anında kurallarla çözülür.
+      audioPath: audioUpload.path,
       language: transcript?.language || transcript?.voice_note?.language || "tr-tr",
       duration: transcript?.duration || transcript?.voice_note?.duration || 10,
     };
@@ -139,10 +140,14 @@ async function processItem(item) {
     ...fields,
     ...(voice_note && { voice_note }),
   };
-  await FirestoreService.addCard(cardData);
+  // Kuyruk öğesinin id'sini kart doküman id'si olarak kullan → idempotent (replay'de
+  // duplike kart oluşmaz, sayaç yalnızca ilk yazımda artar).
+  await FirestoreService.addCardWithId(item.id, cardData);
 }
 
 let processing = false;
+// Sürekli başarısız (zehirli) öğeyi her yeniden bağlanışta sonsuza dek denemeyi durdur.
+const MAX_RETRIES = 5;
 
 export async function processQueue() {
   if (processing) return { processed: 0 };
@@ -151,10 +156,16 @@ export async function processQueue() {
   try {
     const q = await getQueue();
     for (const item of q) {
+      // Zehirli öğe: MAX_RETRIES aşıldıysa atla (kuyrukta kalır, veri kaybı yok;
+      // kullanıcıya bildirim/temizlik ayrı bir iş — bulgu #54).
+      if ((item.retries || 0) >= MAX_RETRIES) continue;
       try {
         await processItem(item);
-        await deleteLocal(item);
+        // Önce kuyruktan kaldır (kalıcı), SONRA yerel dosyaları temizle. Aksi sırada
+        // deleteLocal başarılı olup removeItem başarısız olursa kaynak dosya silinir
+        // ve öğe bir daha işlenemez (kalıcı takılma).
         await removeItem(item.id);
+        await deleteLocal(item);
         processed += 1;
       } catch (e) {
         await bumpRetry(item.id);

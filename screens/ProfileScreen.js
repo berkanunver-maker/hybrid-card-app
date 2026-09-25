@@ -1,5 +1,5 @@
 // screens/ProfileScreen.js — Profil & Ayarlar merkezi (Profil sekmesi)
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { View, Pressable, Alert, ScrollView, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { getAuth, signOut } from "firebase/auth";
@@ -14,7 +14,45 @@ import {
   Button,
   Monogram,
   Icon,
+  Dialog,
+  PasswordInput,
 } from "../components/ui";
+import PrivacyConsent from "../components/PrivacyConsent";
+import { deleteAccountAndData } from "../services/accountService";
+
+// Yeni gizlilik/silme akışı için yerel etiketler (dil'e göre). TODO: i18n key'lerine taşı.
+const L = {
+  tr: {
+    privacyTitle: "Gizlilik",
+    privacyRow: "Gizlilik ve Aydınlatma Metni",
+    dangerTitle: "Tehlikeli Bölge",
+    deleteAccount: "Hesabı Sil",
+    deleteWarn:
+      "Hesabınız ve tüm verileriniz (kartlar, klasörler, görseller, ses notları) kalıcı olarak silinir. Bu işlem geri alınamaz.",
+    passwordLabel: "Parolanız (doğrulama için)",
+    passwordPlaceholder: "Mevcut parolanız",
+    confirmDelete: "Kalıcı olarak sil",
+    cancel: "Vazgeç",
+    needPassword: "Lütfen parolanızı girin.",
+    wrongPassword: "Parola hatalı. Lütfen tekrar deneyin.",
+    deleteError: "Hesap silinemedi. Lütfen tekrar deneyin.",
+  },
+  en: {
+    privacyTitle: "Privacy",
+    privacyRow: "Privacy & Data Notice",
+    dangerTitle: "Danger Zone",
+    deleteAccount: "Delete Account",
+    deleteWarn:
+      "Your account and all your data (cards, folders, images, voice notes) will be permanently deleted. This cannot be undone.",
+    passwordLabel: "Your password (for verification)",
+    passwordPlaceholder: "Current password",
+    confirmDelete: "Delete permanently",
+    cancel: "Cancel",
+    needPassword: "Please enter your password.",
+    wrongPassword: "Incorrect password. Please try again.",
+    deleteError: "Could not delete account. Please try again.",
+  },
+};
 
 const THEME_OPTIONS = [
   { key: "system", labelKey: "theme.system", icon: "phone-portrait-outline" },
@@ -32,13 +70,52 @@ export default function ProfileScreen() {
   const { colors, spacing, radius, mode, setMode } = useTheme();
   const { t, lang, setLang } = useTranslation();
   const styles = useMemo(() => createStyles(colors, spacing, radius), [colors, spacing, radius]);
-  const { pendingCount, processNow } = useOfflineQueue();
+  const { pendingCount, processNow, syncing } = useOfflineQueue();
+  const tx = L[lang] || L.tr;
+
+  // Manuel "Şimdi gönder" — kullanıcıya sonucu bildir (#54).
+  const handleSyncNow = async () => {
+    const res = await processNow();
+    if (res?.processed > 0) {
+      Alert.alert(t("common.success"), t("profile.syncDone", { count: res.processed }));
+    } else {
+      Alert.alert(t("profile.syncNow"), t("profile.syncNone"));
+    }
+  };
 
   const auth = getAuth();
   const user = auth.currentUser;
   const email = user?.email || "";
   const name = user?.displayName || email || t("profile.user");
   const version = Constants?.expoConfig?.version || "1.0.0";
+
+  const [privacyVisible, setPrivacyVisible] = useState(false);
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  const confirmDelete = async () => {
+    if (!deletePassword.trim()) {
+      Alert.alert(t("common.error"), tx.needPassword);
+      return;
+    }
+    setDeleting(true);
+    try {
+      await deleteAccountAndData({ password: deletePassword });
+      // Hesap silindi → oturum düştü, Login'e sıfırla
+      setDeleteVisible(false);
+      setDeleting(false);
+      setDeletePassword("");
+      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+    } catch (e) {
+      setDeleting(false);
+      if (e?.code === "reauth-failed" || e?.code === "auth/wrong-password" || e?.code === "auth/invalid-credential") {
+        Alert.alert(t("common.error"), tx.wrongPassword);
+      } else {
+        Alert.alert(t("common.error"), tx.deleteError);
+      }
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert(t("profile.logout"), t("profile.logoutConfirm"), [
@@ -114,7 +191,8 @@ export default function ProfileScreen() {
         {pendingCount > 0 && (
           <Pressable
             style={styles.syncRow}
-            onPress={processNow}
+            onPress={syncing ? undefined : handleSyncNow}
+            disabled={syncing}
             accessibilityRole="button"
             accessibilityLabel={t("profile.syncNow")}
           >
@@ -122,7 +200,9 @@ export default function ProfileScreen() {
             <AppText variant="caption" style={{ color: colors.warning, flex: 1, marginLeft: 8 }}>
               {t("profile.syncPending", { count: pendingCount })}
             </AppText>
-            <AppText variant="caption" color="primary">{t("profile.syncNow")}</AppText>
+            <AppText variant="caption" color="primary">
+              {syncing ? t("common.loading") : t("profile.syncNow")}
+            </AppText>
           </Pressable>
         )}
 
@@ -151,10 +231,76 @@ export default function ProfileScreen() {
           <Icon name="chevron-forward" size={18} color={colors.textMuted} />
         </Pressable>
 
+        {/* Gizlilik */}
+        <SectionHeader title={tx.privacyTitle} style={{ marginTop: spacing.xxl }} />
+        <Pressable
+          style={styles.infoRow}
+          onPress={() => setPrivacyVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel={tx.privacyRow}
+        >
+          <Icon name="shield-checkmark-outline" size={20} color={colors.textSecondary} />
+          <AppText variant="body" style={{ flex: 1, marginLeft: 12 }}>{tx.privacyRow}</AppText>
+          <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+        </Pressable>
+
         <View style={{ marginTop: spacing.xxl }}>
           <Button title={t("profile.logout")} variant="danger" icon="log-out-outline" onPress={handleLogout} />
         </View>
+
+        {/* Tehlikeli Bölge — Hesap Silme (KVKK silme hakkı) */}
+        <SectionHeader title={tx.dangerTitle} style={{ marginTop: spacing.xxl }} />
+        <Pressable
+          style={styles.deleteRow}
+          onPress={() => { setDeletePassword(""); setDeleteVisible(true); }}
+          accessibilityRole="button"
+          accessibilityLabel={tx.deleteAccount}
+        >
+          <Icon name="trash-outline" size={20} color={colors.danger} />
+          <AppText variant="body" style={{ flex: 1, marginLeft: 12, color: colors.danger }}>
+            {tx.deleteAccount}
+          </AppText>
+        </Pressable>
       </ScrollView>
+
+      {/* Gizlilik/aydınlatma görüntüleme modalı */}
+      <PrivacyConsent
+        visible={privacyVisible}
+        mode="view"
+        onClose={() => setPrivacyVisible(false)}
+      />
+
+      {/* Hesap silme onay + parola doğrulama */}
+      <Dialog visible={deleteVisible} onClose={() => !deleting && setDeleteVisible(false)}>
+        <AppText variant="title" style={{ marginBottom: spacing.sm, color: colors.danger }}>
+          {tx.deleteAccount}
+        </AppText>
+        <AppText variant="body" color="textSecondary" style={{ marginBottom: spacing.lg, lineHeight: 22 }}>
+          {tx.deleteWarn}
+        </AppText>
+        <PasswordInput
+          label={tx.passwordLabel}
+          placeholder={tx.passwordPlaceholder}
+          value={deletePassword}
+          onChangeText={setDeletePassword}
+          editable={!deleting}
+        />
+        <Button
+          title={tx.confirmDelete}
+          variant="danger"
+          onPress={confirmDelete}
+          loading={deleting}
+          disabled={deleting}
+          style={{ marginTop: spacing.md }}
+        />
+        <Button
+          title={tx.cancel}
+          variant="ghost"
+          onPress={() => setDeleteVisible(false)}
+          disabled={deleting}
+          style={{ marginTop: spacing.sm }}
+        />
+      </Dialog>
     </ScreenContainer>
   );
 }
@@ -198,6 +344,15 @@ const createStyles = (colors, spacing, radius) =>
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
+      borderRadius: radius.lg,
+      padding: 14,
+    },
+    deleteRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.dangerSurface || colors.surface,
+      borderWidth: 1,
+      borderColor: colors.danger,
       borderRadius: radius.lg,
       padding: 14,
     },

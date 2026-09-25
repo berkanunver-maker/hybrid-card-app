@@ -59,7 +59,7 @@ export default function OnboardingScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.skipRow}>
-        <Pressable onPress={finish} hitSlop={8} accessibilityRole="button" accessibilityLabel="Atla">
+        <Pressable onPress={finish} hitSlop={8} accessibilityRole="button" accessibilityLabel={t("a11y.skip")}>
           <AppText variant="label" color="textMuted">{t("misc.skip")}</AppText>
         </Pressable>
       </View>

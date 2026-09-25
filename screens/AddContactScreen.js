@@ -94,7 +94,11 @@ export default function AddContactScreen() {
           catId = def.id;
           catName = def.name;
         } catch (e) {
-          // varsayılan kategori alınamazsa kategorisiz devam
+          // Varsayılan kategori alınamadı → kartı klasörsüz kaydedip "başarılı" demek
+          // yanıltıcı olur (klasör görünümlerinde görünmez). Girdiyi koruyup uyar (#55).
+          setSaving(false);
+          Alert.alert(t("common.error"), t("addContact.saveError"));
+          return;
         }
       }
 

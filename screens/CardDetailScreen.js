@@ -12,6 +12,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTheme } from "../utils/theme";
 import { voiceService } from "../services/voiceService";
 import { FirestoreService } from "../services/firestoreService";
+import { getFileUrl } from "../services/storageService";
 import { cleanUrl } from "../utils/format";
 import { saveContactToPhone } from "../services/contactsService";
 import {
@@ -155,7 +156,14 @@ export default function CardDetailScreen() {
         throw new Error("voiceService.playAudio fonksiyonu bulunamadı!");
       }
       setPlaying(true);
-      await voiceService.playAudio(voiceNote?.audioUrl);
+      // Kaynak: yeni kayıtlar audioPath tutar (okuma anında kurallarla çözülür);
+      // eski kartlar/yerel-uri fallback'i audioUrl tutar.
+      let src = voiceNote?.audioUrl || null;
+      if (!src && voiceNote?.audioPath) {
+        src = await getFileUrl(voiceNote.audioPath);
+      }
+      if (!src) throw new Error("Ses kaynağı yok");
+      await voiceService.playAudio(src);
     } catch (err) {
       // Ses oynatma hatası — kullanıcı akışı bozulmasın
     } finally {
@@ -413,7 +421,7 @@ export default function CardDetailScreen() {
           style={styles.iconButton}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Geri dön"
+          accessibilityLabel={t("a11y.back")}
         >
           <Icon name="arrow-back" size={24} color={colors.text} />
         </Pressable>
@@ -440,7 +448,7 @@ export default function CardDetailScreen() {
             style={styles.iconButton}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Kart menüsü"
+            accessibilityLabel={t("a11y.cardMenu")}
           >
             <Icon name="ellipsis-horizontal" size={24} color={colors.text} />
           </Pressable>
@@ -460,7 +468,7 @@ export default function CardDetailScreen() {
             onPress={handleCancelEdit}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Düzenlemeyi iptal et"
+            accessibilityLabel={t("a11y.cancelEdit")}
           >
             <AppText variant="bodyStrong" color="primary">{t("common.cancel")}</AppText>
           </Pressable>
@@ -600,7 +608,7 @@ export default function CardDetailScreen() {
                 onPress={handleDeleteVoice}
                 hitSlop={8}
                 accessibilityRole="button"
-                accessibilityLabel="Ses notunu sil"
+                accessibilityLabel={t("a11y.deleteVoiceNote")}
               >
                 <Icon name="trash-outline" size={20} color={colors.danger} />
               </Pressable>
@@ -609,7 +617,7 @@ export default function CardDetailScreen() {
 
           {voiceNote ? (
             <>
-              {voiceNote.audioUrl ? (
+              {(voiceNote.audioUrl || voiceNote.audioPath) ? (
                 <Pressable
                   style={styles.playButton}
                   onPress={playVoiceNote}
@@ -636,7 +644,7 @@ export default function CardDetailScreen() {
                     multiline
                     placeholder={t("card.editTranscript")}
                     placeholderTextColor={colors.textMuted}
-                    accessibilityLabel="Transkript"
+                    accessibilityLabel={t("a11y.transcript")}
                   />
                   <View style={styles.voiceActions}>
                     <Button
@@ -654,7 +662,7 @@ export default function CardDetailScreen() {
                   style={styles.transcriptBox}
                   onPress={startEditTranscript}
                   accessibilityRole="button"
-                  accessibilityLabel="Transkripti düzenle"
+                  accessibilityLabel={t("a11y.editTranscript")}
                 >
                   <AppText
                     variant="body"

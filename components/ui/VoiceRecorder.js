@@ -69,10 +69,15 @@ export default function VoiceRecorder({ visible, onClose, onComplete, userId, tr
         return;
       }
       setPhase("processing");
+      // Yüklenebildiyse tokenlı URL'yi DEĞİL, Storage path'ini kalıcılaştırırız
+      // (org-okunabilir dokümanda tokenlı URL = kalıcı sızıntı). Yükleme başarısızsa
+      // yerel uri fallback olarak audioUrl'de tutulur (yalnızca bu cihaz/oturum için).
+      let audioPath = null;
       let audioUrl = uri;
       try {
         const up = await uploadFile({ uri, path: `voices/${userId}/${Date.now()}.m4a` });
-        audioUrl = up.url;
+        audioPath = up.path;
+        audioUrl = null; // tokenlı URL persist edilmez
       } catch (e) {
         // yükleme başarısızsa yerel uri ile devam
       }
@@ -80,7 +85,7 @@ export default function VoiceRecorder({ visible, onClose, onComplete, userId, tr
       onComplete &&
         onComplete({
           text: transcript?.text || transcript?.voice_note?.text || "",
-          audioUrl,
+          ...(audioPath ? { audioPath } : { audioUrl }),
           language: transcript?.language || transcript?.voice_note?.language || "tr-tr",
           duration: dur,
         });
@@ -164,7 +169,7 @@ export default function VoiceRecorder({ visible, onClose, onComplete, userId, tr
           <Pressable
             onPress={finishRecording}
             accessibilityRole="button"
-            accessibilityLabel="Kaydı durdur"
+            accessibilityLabel={t("a11y.stopRecording")}
             style={{
               width: 64,
               height: 64,

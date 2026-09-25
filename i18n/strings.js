@@ -12,6 +12,7 @@ import modals from "./locales/modals";
 import tools from "./locales/tools";
 import misc from "./locales/misc";
 import uinav from "./locales/uinav";
+import a11y from "./locales/a11y";
 
 const base = {
   tr: {
@@ -47,6 +48,8 @@ const base = {
     "profile.user": "Kullanıcı",
     "profile.syncPending": "{count} kart senkron bekliyor",
     "profile.syncNow": "Şimdi gönder",
+    "profile.syncDone": "{count} kart senkronlandı",
+    "profile.syncNone": "Senkronlanacak kart yok veya bağlantı bekleniyor.",
     "profile.logoutError": "Çıkış yapılamadı. Lütfen tekrar deneyin.",
     "profile.company": "Şirket",
   },
@@ -79,12 +82,14 @@ const base = {
     "profile.user": "User",
     "profile.syncPending": "{count} cards waiting to sync",
     "profile.syncNow": "Sync now",
+    "profile.syncDone": "{count} cards synced",
+    "profile.syncNone": "No cards to sync, or waiting for connection.",
     "profile.logoutError": "Could not sign out. Please try again.",
     "profile.company": "Company",
   },
 };
 
-const packs = [home, carddetail, camera, addcontact, activity, auth, lists, search, modals, tools, misc, uinav];
+const packs = [home, carddetail, camera, addcontact, activity, auth, lists, search, modals, tools, misc, uinav, a11y];
 
 function build(lang) {
   return packs.reduce(

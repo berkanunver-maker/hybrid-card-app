@@ -9,12 +9,14 @@ import {
   StyleSheet,
 } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { useTheme } from "../utils/theme";
 import { FirestoreService } from "../services/firestoreService";
 import ExcelService from "../services/excelService";
 import { getTimeAgo } from "../utils/format";
 import { useOfflineQueue } from "../context/OfflineQueueProvider";
+import { hasPrivacyConsent, setPrivacyConsent } from "../utils/consent";
+import PrivacyConsent from "../components/PrivacyConsent";
 import {
   ScreenContainer,
   AppText,
@@ -54,15 +56,44 @@ export default function HomeScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [consentVisible, setConsentVisible] = useState(false);
 
   const auth = getAuth();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUserId(user ? user.uid : null);
+      // Oturum yoksa iskelet sonsuza dek dönmesin (loadCategories userId yokken erken
+      // döndüğü için loading true kalıyordu — bulgu #24).
+      if (!user) setLoading(false);
     });
     return () => unsubscribe();
   }, []);
+
+  // KVKK aydınlatma/rıza kapısı — ilk açılışta (rıza yoksa) göster.
+  useEffect(() => {
+    let mounted = true;
+    hasPrivacyConsent().then((ok) => {
+      if (mounted && !ok) setConsentVisible(true);
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  const handleConsentAccept = async () => {
+    await setPrivacyConsent(true);
+    setConsentVisible(false);
+  };
+
+  const handleConsentReject = async () => {
+    // Rıza vermeyen kullanıcı PII işleyemez → oturumu kapat.
+    setConsentVisible(false);
+    try {
+      await signOut(auth);
+    } catch (e) {
+      // yoksay
+    }
+    navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+  };
 
   const loadCategories = useCallback(async () => {
     if (!userId) return;
@@ -217,10 +248,10 @@ export default function HomeScreen() {
           </AppText>
         </View>
         <Pressable
-          onPress={() => Alert.alert(t("home.notifications"), t("home.comingSoon"))}
+          onPress={() => navigation.navigate("ActivityFeed")}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Bildirimler"
+          accessibilityLabel={t("home.notifications")}
           style={styles.iconBtn}
         >
           <Icon name="notifications-outline" size={22} color={colors.text} />
@@ -229,7 +260,7 @@ export default function HomeScreen() {
           onPress={() => navigation.navigate("Stats")}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="İstatistikler"
+          accessibilityLabel={t("a11y.stats")}
           style={styles.iconBtn}
         >
           <Icon name="stats-chart-outline" size={22} color={colors.text} />
@@ -240,7 +271,7 @@ export default function HomeScreen() {
         style={styles.search}
         onPress={() => navigation.navigate("Search")}
         accessibilityRole="search"
-        accessibilityLabel="Kart ara"
+        accessibilityLabel={t("a11y.searchCards")}
       >
         <Icon name="search" size={20} color={colors.textMuted} />
         <AppText variant="body" color="textMuted" style={{ marginLeft: 8 }}>
@@ -253,7 +284,7 @@ export default function HomeScreen() {
           style={styles.syncBanner}
           onPress={processNow}
           accessibilityRole="button"
-          accessibilityLabel="Bekleyen kartları şimdi gönder"
+          accessibilityLabel={t("a11y.syncNow")}
         >
           <Icon name="cloud-upload-outline" size={18} color={colors.warning} />
           <AppText variant="caption" style={{ color: colors.warning, flex: 1, marginLeft: 8 }}>
@@ -266,7 +297,7 @@ export default function HomeScreen() {
       <View style={styles.quickRow}>
         <SurfaceCard
           onPress={() => navigation.navigate("Favorites")}
-          accessibilityLabel="Favoriler"
+          accessibilityLabel={t("a11y.favorites")}
           style={styles.quickCard}
         >
           <View style={styles.quickIcon}>
@@ -277,7 +308,7 @@ export default function HomeScreen() {
         </SurfaceCard>
         <SurfaceCard
           onPress={() => navigation.navigate("AllCards")}
-          accessibilityLabel="Tüm kartlar"
+          accessibilityLabel={t("a11y.allCards")}
           style={styles.quickCard}
         >
           <View style={styles.quickIcon}>
@@ -429,6 +460,14 @@ export default function HomeScreen() {
         itemName={selectedFolder?.name}
         itemCount={selectedFolder?.cardCount || 0}
         showMoveOption={true}
+      />
+
+      {/* KVKK aydınlatma + açık rıza kapısı */}
+      <PrivacyConsent
+        visible={consentVisible}
+        mode="gate"
+        onAccept={handleConsentAccept}
+        onReject={handleConsentReject}
       />
     </ScreenContainer>
   );

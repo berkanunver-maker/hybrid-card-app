@@ -186,7 +186,10 @@ export const uploadFile = async ({ uri, path }) => {
     if (__DEV__) {
       console.log("✅ Dosya yüklendi:", url);
     }
-    return { url };
+    // path da döndürülür: tokenlı `url` yerine `path` kalıcılaştırılır (org-okunabilir
+    // dokümanlarda tokenlı indirme URL'si = kalıcı bearer sızıntısı). URL okuma anında
+    // getFileUrl(path) ile Storage kurallarına tabi olarak çözülür.
+    return { url, path };
   } catch (error) {
     console.error("❌ uploadFile error:", error.message);
     if (__DEV__) {

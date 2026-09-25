@@ -114,7 +114,7 @@ export default function FavoritesScreen() {
           onPress={() => navigation.goBack()}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Geri"
+          accessibilityLabel={t("a11y.back")}
           style={styles.iconBtn}
         >
           <Icon name="arrow-back" size={24} color={colors.text} />

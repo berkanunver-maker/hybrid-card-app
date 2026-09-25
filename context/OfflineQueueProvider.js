@@ -12,21 +12,31 @@ import { getPendingCount, processQueue } from "../services/offlineQueueService";
 
 const OfflineQueueContext = createContext({
   pendingCount: 0,
+  syncing: false,
   refresh: () => {},
-  processNow: async () => {},
+  processNow: async () => ({ processed: 0 }),
 });
 
 export function OfflineQueueProvider({ children }) {
   const [pendingCount, setPendingCount] = useState(0);
+  const [syncing, setSyncing] = useState(false);
 
   const refresh = useCallback(async () => {
     const n = await getPendingCount();
     setPendingCount(n);
   }, []);
 
+  // Sonucu döndürür → manuel tetikleyen ekran kullanıcıya geri bildirim gösterebilir
+  // (#54). Otomatik (NetInfo/AppState) çağrılar sonucu yok sayıp sessiz kalır.
   const processNow = useCallback(async () => {
-    await processQueue();
-    await refresh();
+    setSyncing(true);
+    try {
+      const res = await processQueue();
+      await refresh();
+      return res || { processed: 0 };
+    } finally {
+      setSyncing(false);
+    }
   }, [refresh]);
 
   useEffect(() => {
@@ -56,7 +66,7 @@ export function OfflineQueueProvider({ children }) {
   }, [refresh, processNow]);
 
   return (
-    <OfflineQueueContext.Provider value={{ pendingCount, refresh, processNow }}>
+    <OfflineQueueContext.Provider value={{ pendingCount, syncing, refresh, processNow }}>
       {children}
     </OfflineQueueContext.Provider>
   );

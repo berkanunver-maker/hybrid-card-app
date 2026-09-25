@@ -68,9 +68,11 @@ export default function StatsScreen() {
         card => new Date(card.createdAt) >= startOfMonth
       );
 
-      // Bu hafta eklenen kartlar
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay());
+      // Bu hafta eklenen kartlar — hafta PAZARTESİ başlar (TR/ISO) ve gün başına
+      // sıfırlanır (saat dahil edilmezse sınır günü kartları düşebiliyordu — bulgu #44).
+      const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const dowMon = (startOfWeek.getDay() + 6) % 7; // Pazartesi=0 … Pazar=6
+      startOfWeek.setDate(startOfWeek.getDate() - dowMon);
       const cardsThisWeek = allCards.filter(
         card => new Date(card.createdAt) >= startOfWeek
       );
@@ -164,7 +166,7 @@ export default function StatsScreen() {
           onPress={() => navigation.goBack()}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Geri"
+          accessibilityLabel={t("a11y.back")}
           style={styles.backBtn}
         >
           <Icon name="arrow-back" size={24} color={colors.text} />

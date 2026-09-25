@@ -1,5 +1,5 @@
 // screens/FolderScreen.js
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -46,13 +46,16 @@ export default function FolderScreen() {
 
   const auth = getAuth();
   const userId = auth.currentUser?.uid;
+  const hasLoadedRef = useRef(false);
 
-  // Kartları yükle
+  // Kartları yükle. İlk yüklemede tam-ekran loader gösterilir; odak yenilemelerinde
+  // liste yerinde kalır (her dönüşte boş spinner + scroll sıfırlanması yaşanmasın — #47).
   const loadCards = async () => {
     try {
-      setLoading(true);
+      if (!hasLoadedRef.current) setLoading(true);
       const fetchedCards = await FirestoreService.getCardsByCategory(category.id, userId);
       setCards(fetchedCards);
+      hasLoadedRef.current = true;
     } catch (error) {
       Alert.alert(t("common.error"), t("lists.loadCardsError"));
     } finally {
@@ -140,7 +143,7 @@ export default function FolderScreen() {
           onPress={() => navigation.goBack()}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Geri"
+          accessibilityLabel={t("a11y.back")}
           style={styles.iconBtn}
         >
           <Icon name="arrow-back" size={24} color={colors.text} />
@@ -155,7 +158,7 @@ export default function FolderScreen() {
           onPress={() => setMenuVisible(true)}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Klasör menüsü"
+          accessibilityLabel={t("a11y.folderMenu")}
           style={styles.iconBtn}
         >
           <Icon name="ellipsis-vertical" size={24} color={colors.text} />
@@ -205,7 +208,7 @@ export default function FolderScreen() {
           <Pressable
             onPress={handleAddCard}
             accessibilityRole="button"
-            accessibilityLabel="Kart ekle"
+            accessibilityLabel={t("a11y.addCard")}
             style={({ pressed }) => [styles.fab, { opacity: pressed ? 0.92 : 1 }]}
           >
             <Icon name="add" size={28} color={colors.onPrimary} />
@@ -220,7 +223,7 @@ export default function FolderScreen() {
           onPress={handleExportToExcel}
           disabled={exporting}
           accessibilityRole="button"
-          accessibilityLabel="Excel'e Aktar"
+          accessibilityLabel={t("a11y.exportExcel")}
         >
           <Icon name="document-text-outline" size={22} color={colors.primary} />
           <AppText variant="bodyStrong" style={{ marginLeft: 12, flex: 1 }}>
@@ -241,7 +244,7 @@ export default function FolderScreen() {
           style={styles.sheetRow}
           onPress={() => setMenuVisible(false)}
           accessibilityRole="button"
-          accessibilityLabel="İptal"
+          accessibilityLabel={t("a11y.cancel")}
         >
           <Icon name="close-outline" size={22} color={colors.textSecondary} />
           <AppText variant="bodyStrong" color="textSecondary" style={{ marginLeft: 12 }}>

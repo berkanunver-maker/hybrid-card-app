@@ -26,13 +26,10 @@ export const SearchService = {
         // Belirli klasördeki kartları çek
         cards = await FirestoreService.getCardsByCategory(filters.categoryId, userId);
       } else {
-        // Tüm kartları çek
-        const categories = await FirestoreService.getUserCategories(userId);
-        const allCardsPromises = categories.map(cat => 
-          FirestoreService.getCardsByCategory(cat.id, userId)
-        );
-        const allCardsArrays = await Promise.all(allCardsPromises);
-        cards = allCardsArrays.flat();
+        // Tüm kartları çek — userId bazlı TEK sorgu. Kategori fan-out'u kategorisiz
+        // (categoryId null / silinmiş klasör) kartları düşürüyordu; getAllUserCards
+        // categoryId'ye bakmaksızın hepsini döndürür (denetim bulgusu #6).
+        cards = await FirestoreService.getAllUserCards(userId);
       }
 
       // Arama terimine göre filtrele
@@ -174,12 +171,8 @@ export const SearchService = {
    */
   async getFilterCounts(userId) {
     try {
-      const categories = await FirestoreService.getUserCategories(userId);
-      const allCardsPromises = categories.map(cat => 
-        FirestoreService.getCardsByCategory(cat.id, userId)
-      );
-      const allCardsArrays = await Promise.all(allCardsPromises);
-      const allCards = allCardsArrays.flat();
+      // Kategorisiz kartlar da sayılsın diye userId bazlı tek sorgu (denetim bulgusu #6).
+      const allCards = await FirestoreService.getAllUserCards(userId);
 
       const favorites = allCards.filter(card => card.isFavorite === true).length;
       const highQuality = allCards.filter(card => (card.qaScore || 0) >= 80).length;

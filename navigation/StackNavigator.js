@@ -39,7 +39,6 @@ import ToolsScreen from "../screens/ToolsScreen";
 import QAPreviewScreen from "../screens/QAPreviewScreen";
 import FairSelectScreen from "../screens/FairSelectScreen";
 import SelectCategoryModal from "../screens/SelectCategoryModal";
-import SettingsScreen from "../screens/SettingsScreen";
 
 const Stack = createStackNavigator();
 
@@ -237,13 +236,6 @@ export default function StackNavigator() {
         name="SelectCategory"
         component={SelectCategoryModal}
         options={{ title: t("ui.titleSelectCategory") }}
-      />
-
-      {/* ⚙️ Ayarlar */}
-      <Stack.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{ title: t("ui.titleSettings") }}
       />
     </Stack.Navigator>
   );

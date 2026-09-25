@@ -1,15 +1,36 @@
 // services/api.js
+import { getIdToken } from "firebase/auth";
+import { auth } from "./firestoreService";
 
 const BASE_URL = "https://hybrid-card-api-145445824075.us-central1.run.app";
+
+/**
+ * Aktif kullanıcının Firebase ID token'ını Authorization header'ı olarak döndürür.
+ * Backend bu token'ı verifyIdToken ile doğrulayıp anonim çağrıları reddetmelidir
+ * (denial-of-wallet / SSRF koruması). Kullanıcı yoksa boş döner → istek anonim gider
+ * ve backend tarafından reddedilir (fail-closed hedefi).
+ */
+async function getAuthHeader() {
+  try {
+    const user = auth?.currentUser;
+    if (!user) return {};
+    const token = await getIdToken(user); // geçerliyse cache'ten, süresi geçtiyse yeniler
+    return { Authorization: `Bearer ${token}` };
+  } catch (error) {
+    console.warn("⚠️ [API] ID token alınamadı:", error?.message);
+    return {};
+  }
+}
 
 /**
  * Genel API istek yöneticisi
  */
 export async function apiRequest(endpoint, method = "GET", body = null, isFormData = false) {
   const url = `${BASE_URL}/${endpoint}`;
+  const authHeader = await getAuthHeader();
   const headers = isFormData
-    ? {} // fetch otomatik Content-Type: multipart/form-data ekleyecek
-    : { "Content-Type": "application/json" };
+    ? { ...authHeader } // Content-Type'ı fetch otomatik ekler (multipart boundary)
+    : { "Content-Type": "application/json", ...authHeader };
 
   const options = { method, headers };
   if (body) options.body = isFormData ? body : JSON.stringify(body);
@@ -20,7 +41,8 @@ export async function apiRequest(endpoint, method = "GET", body = null, isFormDa
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("❌ API error:", data);
+      // Yanıt gövdesini loglamıyoruz — PII/hassas alan içerebilir (KVKK). Sadece durum.
+      console.error(`❌ API error: ${method} ${endpoint} → HTTP ${response.status}`);
       throw new Error(data.detail || "API request failed");
     }
 

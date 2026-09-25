@@ -146,7 +146,7 @@ export default function SelectCategoryModal({ visible, onClose, onSelect, cardDa
           onPress={onClose}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Kapat"
+          accessibilityLabel={t("a11y.close")}
           style={styles.closeBtn}
         >
           <Icon name="close" size={28} color={colors.text} />
@@ -223,7 +223,7 @@ export default function SelectCategoryModal({ visible, onClose, onSelect, cardDa
                 style={styles.newCategoryButton}
                 onPress={() => setShowNewCategory(true)}
                 accessibilityRole="button"
-                accessibilityLabel="Yeni klasör oluştur"
+                accessibilityLabel={t("a11y.createFolder")}
               >
                 <Icon
                   name="add-circle-outline"

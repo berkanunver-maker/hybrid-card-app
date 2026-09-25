@@ -35,7 +35,7 @@ export default function SearchBar({
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
-        accessibilityLabel="Arama"
+        accessibilityLabel={t("a11y.search")}
         rightIcon={hasValue ? "close-circle" : undefined}
         onRightIconPress={hasValue ? onClear : undefined}
         containerStyle={styles.inputContainer}

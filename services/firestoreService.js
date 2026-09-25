@@ -17,9 +17,12 @@ import {
   orderBy,
   increment,
   limit,
+  writeBatch,
+  runTransaction,
 } from "firebase/firestore";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { personalOrgId } from "../utils/org";
+import { secureStorage } from "../utils/secureStorage";
 
 // 🔹 Firebase konfigürasyonu (Environment Variables'dan)
 const firebaseConfig = {
@@ -68,13 +71,15 @@ const getReactNativePersistence = (storage) =>
     }
   };
 
-// 🔹 Auth with AsyncStorage persistence
+// 🔹 Auth persistence — token'ı ŞİFRELİ SecureStore'da tut (AsyncStorage fallback'li).
+// Denetim #10: token artık cihazda düz metin durmuyor. secureStorage, native modül
+// yoksa AsyncStorage'a düşer, bu yüzden yeniden build edilene kadar da güvenle çalışır.
 let auth;
 try {
   auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage),
+    persistence: getReactNativePersistence(secureStorage),
   });
-  console.log("✅ Firebase Auth with AsyncStorage initialized");
+  console.log("✅ Firebase Auth (secure persistence) initialized");
 } catch (error) {
   // Auth zaten başlatılmışsa (örn. Fast Refresh) getAuth kullan
   auth = getAuth(app);
@@ -189,40 +194,32 @@ export const FirestoreService = {
         where("userId", "==", auth.currentUser?.uid)
       );
       const cardsSnapshot = await getDocs(cardsQuery);
-      const cardCount = cardsSnapshot.docs.length;
+      const cardDocs = cardsSnapshot.docs;
+      const cardCount = cardDocs.length;
 
       console.log(`📊 Klasörde ${cardCount} kart bulundu`);
 
-      // 2. Kartları işle
-      if (deleteCards) {
-        // Kartları sil
-        console.log("🗑️ Kartlar siliniyor...");
-        const deletePromises = cardsSnapshot.docs.map(doc =>
-          deleteDoc(doc.ref)
-        );
-        await Promise.all(deletePromises);
-        console.log("✅ Kartlar silindi");
-      } else if (moveToFolderId) {
-        // Kartları başka klasöre taşı
-        console.log(`📁 Kartlar ${moveToFolderId} klasörüne taşınıyor...`);
-        const updatePromises = cardsSnapshot.docs.map(doc =>
-          updateDoc(doc.ref, { categoryId: moveToFolderId })
-        );
-        await Promise.all(updatePromises);
-
-        // Hedef klasörün sayısını artır
-        if (cardCount > 0) {
-          await FirestoreService.incrementCategoryCardCount(
-            moveToFolderId,
-            cardCount
-          );
+      // 2. Kart işlemleri (sil / taşı) — batch'lerle (Firestore limiti 500; parça 450).
+      // Her batch atomiktir: Promise.all'daki kısmi-hata → sayaç kayması sorunu giderilir (#12).
+      const CHUNK = 450;
+      for (let i = 0; i < cardDocs.length; i += CHUNK) {
+        const batch = writeBatch(db);
+        for (const d of cardDocs.slice(i, i + CHUNK)) {
+          if (deleteCards) batch.delete(d.ref);
+          else if (moveToFolderId) batch.update(d.ref, { categoryId: moveToFolderId });
         }
-        console.log("✅ Kartlar taşındı");
+        await batch.commit();
       }
 
-      // 3. Klasörü sil
-      const categoryRef = doc(categoriesRef, categoryId);
-      await deleteDoc(categoryRef);
+      // 3. Hedef klasör sayacı + kaynak klasör silme — tek batch (atomik).
+      const finalBatch = writeBatch(db);
+      if (!deleteCards && moveToFolderId && cardCount > 0) {
+        finalBatch.update(doc(categoriesRef, moveToFolderId), {
+          cardCount: increment(cardCount),
+        });
+      }
+      finalBatch.delete(doc(categoriesRef, categoryId));
+      await finalBatch.commit();
 
       console.log("✅ Klasör silindi");
       return categoryId;
@@ -402,29 +399,68 @@ export const FirestoreService = {
     }
   },
 
+  // Deterministik id ile IDEMPOTENT kart yazımı. Offline kuyruk replay'inde (kart
+  // yazıldı ama kuyruktan silme başarısız oldu → tekrar işlenir) aynı id'ye setDoc
+  // yaptığı için DUPLİKE kart oluşmaz; sayaç yalnızca ilk oluşturmada artar (bulgu #13).
+  addCardWithId: async (id, cardData) => {
+    try {
+      if (!id) throw new Error("id is required");
+      if (!cardData.userId) throw new Error("userId is required to add a card");
+
+      const ref = doc(cardsRef, id);
+      const catRef = cardData.categoryId ? doc(categoriesRef, cardData.categoryId) : null;
+
+      // Kart yazımı + sayaç artışı TEK transaction (atomik → kısmi hatada sayaç kaymaz).
+      // Doküman ZATEN varsa hiç yazma yapılmaz: (a) replay'de duplike/tekrar-sayım olmaz,
+      // (b) kullanıcının iki replay arasında yaptığı düzenlemeler KORUNUR (üzerine yazılmaz).
+      await runTransaction(db, async (tx) => {
+        const existing = await tx.get(ref);
+        if (existing.exists()) return; // zaten yazılmış → dokunma
+        const catSnap = catRef ? await tx.get(catRef) : null;
+
+        tx.set(ref, {
+          ...cardData,
+          ownerId: cardData.ownerId || cardData.userId,
+          orgId: cardData.orgId || personalOrgId(cardData.userId),
+          isFavorite: false,
+          createdAt: cardData.createdAt || new Date().toISOString(),
+        });
+        // Sayaç yalnızca kategori dokümanı varsa artar (bayat categoryId batch'i kırmasın).
+        if (catRef && catSnap && catSnap.exists()) {
+          tx.update(catRef, { cardCount: increment(1) });
+        }
+      });
+
+      return { id, ...cardData };
+    } catch (error) {
+      console.error("❌ Firestore addCardWithId error:", error);
+      throw error;
+    }
+  },
+
   moveCard: async (cardId, oldCategoryId, newCategoryId) => {
     try {
       console.log("📦 moveCard çağrıldı:", { cardId, oldCategoryId, newCategoryId });
 
-      // 1. Kartın categoryId'sini güncelle
-      const cardRef = doc(cardsRef, cardId);
-      await updateDoc(cardRef, {
-        categoryId: newCategoryId,
-        movedAt: new Date().toISOString()
+      // Kart taşıma + sayaçlar TEK transaction (atomik → sayaç kaymaz, #12/#45). Sayaç
+      // güncellemesi yalnızca VAR OLAN kategori dokümanlarına uygulanır: bayat/silinmiş
+      // bir categoryId batch'i NOT_FOUND ile komple reddedip kartı hiç taşımamalı (regresyon).
+      await runTransaction(db, async (tx) => {
+        const oldRef = oldCategoryId ? doc(categoriesRef, oldCategoryId) : null;
+        const newRef = newCategoryId ? doc(categoriesRef, newCategoryId) : null;
+        // Tüm okumalar yazımlardan ÖNCE (Firestore transaction kuralı)
+        const oldSnap = oldRef ? await tx.get(oldRef) : null;
+        const newSnap = newRef ? await tx.get(newRef) : null;
+
+        tx.update(doc(cardsRef, cardId), {
+          categoryId: newCategoryId,
+          movedAt: new Date().toISOString(),
+        });
+        if (oldRef && oldSnap.exists()) tx.update(oldRef, { cardCount: increment(-1) });
+        if (newRef && newSnap.exists()) tx.update(newRef, { cardCount: increment(1) });
       });
 
-      console.log("✅ Kart güncellendi");
-
-      // 2. Eski klasörün sayısını azalt
-      if (oldCategoryId) {
-        await FirestoreService.incrementCategoryCardCount(oldCategoryId, -1);
-        console.log("✅ Eski klasör sayısı azaldı");
-      }
-
-      // 3. Yeni klasörün sayısını artır
-      await FirestoreService.incrementCategoryCardCount(newCategoryId, 1);
-      console.log("✅ Yeni klasör sayısı arttı");
-
+      console.log("✅ Kart taşındı (atomik)");
       return { id: cardId, categoryId: newCategoryId };
     } catch (error) {
       console.error("❌ Firestore moveCard error:", error);
